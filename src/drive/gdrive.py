@@ -21,9 +21,7 @@ import io
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
 if os.getcwd() == os.path.dirname(__file__):
-    os.chdir(os.path.join(os.getcwd(), ".."))
-
-print(os.getcwd())
+    os.chdir(os.path.join(os.getcwd(), "..", ".."))
 
 
 def authenticate(servicePath: str) -> service_account.Credentials:
