@@ -1,3 +1,11 @@
+import os
+
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
+
+from dotenv import load_dotenv
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
+
 # Import the Google Auth Library
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
@@ -5,16 +13,17 @@ from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
 import time
 import warnings
 
-import os
+
 import pandas as pd
 
 import io
 
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
-import sys
+if os.getcwd() == os.path.dirname(__file__):
+    os.chdir(os.path.join(os.getcwd(), ".."))
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
+print(os.getcwd())
 
 
 def authenticate(servicePath: str) -> service_account.Credentials:
@@ -28,30 +37,21 @@ def authenticate(servicePath: str) -> service_account.Credentials:
         service_account.Credentials: The credentials of the service account
     """
     credentials = service_account.Credentials.from_service_account_file(
-        servicePath, scopes=["https://www.googleapis.com/auth/drive.file"]
+        servicePath, scopes=['https://www.googleapis.com/auth/drive.file']
     )
     return credentials
 
 
 # Credentials
-SERVICE_ACCOUNT_CREDENTIAL_PATH = os.getenv(
-    "SERVICE_ACCOUNT"
-)  # File that contains credentials of Habibi Service Account
-PARENTS_FOLDER_ID = (
-    "1-AHq0gILYYjUY0ThwuHIdOzFRLW0OjK0"  # Folder ID of GGSP Drive folder
-)
-SERVICE = build(
-    "drive",
-    "v3",
-    credentials=authenticate(SERVICE_ACCOUNT_CREDENTIAL_PATH),
-    cache_discovery=False,
-)  # Service account object
+SERVICE_ACCOUNT_CREDENTIAL_PATH = os.getenv("SERVICE_ACCOUNT")  # File that contains credentials of Habibi Service Account
+PARENTS_FOLDER_ID = "1-AHq0gILYYjUY0ThwuHIdOzFRLW0OjK0"  # Folder ID of GGSP Drive folder
+SERVICE = build("drive", "v3", 
+                credentials=authenticate(SERVICE_ACCOUNT_CREDENTIAL_PATH), 
+                cache_discovery=False)  # Service account object
 
 # Paths
 SOURCE_PATH = os.getenv("SOURCE_PATH")  # Path where the files are stored
-DESTINATION_PATH = os.getenv(
-    "DESTINATION_PATH"
-)  # Path where the files will be downloaded
+DESTINATION_PATH = os.getenv("DESTINATION_PATH")  # Path where the files will be downloaded
 
 
 def get_file_id(filename: str) -> str:
@@ -78,7 +78,7 @@ def get_file_id(filename: str) -> str:
         print(f"[{filename}] FileId found in GGSP Drive")
         return file
     except Exception as E:
-        warnings.warn(f"[{filename}] File not found in GGSP Drive")
+        warnings.warn(f"[{filename}] File not found in GGSP Drive: {E}")
         return None
 
 
@@ -113,15 +113,14 @@ def upload_file(filename: str) -> str:
     # Extract the filename and the file id if it exists
     filename = os.path.basename(filename)
     filepath = os.path.join(SOURCE_PATH, filename)
+    print(os.getcwd(), filepath)
     if not os.path.exists(filepath):
         filepath = os.path.join(DESTINATION_PATH, filename)
     file_id = get_file_id(filename)
 
     # Convert the file to a media object (that can be forwarded)
     print(f"[{filename}] Uploading the file to GGSP Drive")
-    media = MediaFileUpload(
-        filepath, mimetype="application/octet-stream", resumable=True
-    )
+    media = MediaFileUpload(filepath, mimetype="application/octet-stream", resumable=True)
 
     try:
         if file_id is not None:
@@ -133,7 +132,7 @@ def upload_file(filename: str) -> str:
             file_metadata = {"name": filename, "parents": [PARENTS_FOLDER_ID]}
             SERVICE.files().create(body=file_metadata, media_body=media).execute()
             print(f"[{filename}] File uploaded successfully.")
-    except Exception as E:
+    except Exception as E:      
         warnings.warn(f"[{filename}] An error occurred while uploading the file: {E}")
 
     time.sleep(10)
@@ -175,9 +174,7 @@ def download_file(filename: str, save=True) -> str:
             if status:
                 print(f"[{filename}] Download {int(status.progress() * 100)}%.")
         except Exception as e:
-            warnings.warn(
-                f"[{filename}] An error occurred during the download of the file: {e}"
-            )
+            warnings.warn(f"[{filename}] An error occurred during the download of the file: {e}")
             break
 
     time.sleep(3)
@@ -190,9 +187,7 @@ def download_file(filename: str, save=True) -> str:
             print(f"[{filename}] File read into DataFrame successfully.")
             return df
         except Exception as e:
-            warnings.warn(
-                f"[{filename}] An error occurred while reading the file into DataFrame: {e}"
-            )
+            warnings.warn(f"[{filename}] An error occurred while reading the file into DataFrame: {e}")
             return None
 
 
@@ -212,13 +207,13 @@ def upload_all_files() -> None:
     with ProcessPoolExecutor(max_workers=3) as executor:
         for file in filesToUpload:
             futures.append(executor.submit(upload_file, file))
-
+    
     for future in as_completed(futures):
         try:
             result = future.result()
             print(f"Task completed for file: {result}")
         except Exception as exc:
-            warnings.warn(f"Task generated an exception: {exc}")
+            warnings.warn(f'Task generated an exception: {exc}')
 
     print(f"All tasks have been completed")
 
@@ -241,6 +236,5 @@ def download_all_files() -> None:
             result = future.result()
             print(f"Task completed for file: {result}")
         except Exception as exc:
-            warnings.warn(f"Task generated an exception: {exc}")
-
-    print(f"All tasks have been completed")
+            warnings.warn(f'Task generated an exception: {exc}')
+    print("All tasks have been completed")
