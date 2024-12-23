@@ -21,10 +21,10 @@ from torch_geometric.data import Data
 import torch.nn.functional as F
 from torch_geometric.loader import DataLoader
 
-from autoencoder import VariationalAutoEncoder
-from denoise_model import DenoiseNN, p_losses, sample
-from utils import linear_beta_schedule, construct_nx_from_adj, preprocess_dataset
-
+from ggsp.models import VariationalAutoEncoder, DenoiseNN, p_losses, sample
+from ggsp.train import train_autoencoder
+from ggsp.data import preprocess_dataset
+from ggsp.utils import linear_beta_schedule, construct_nx_from_adj, load_model_checkpoint
 
 from torch.utils.data import Subset
 
@@ -232,72 +232,18 @@ scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=500, gamma=0.1)
 
 # Train VGAE model
 if args.train_autoencoder:
-    best_val_loss = np.inf
-    for epoch in range(1, args.epochs_autoencoder + 1):
-        autoencoder.train()
-        train_loss_all = 0
-        train_count = 0
-        train_loss_all_recon = 0
-        train_loss_all_kld = 0
-        cnt_train = 0
-
-        for data in train_loader:
-            data = data.to(device)
-            optimizer.zero_grad()
-            loss, recon, kld = autoencoder.loss_function(data)
-            train_loss_all_recon += recon.item()
-            train_loss_all_kld += kld.item()
-            cnt_train += 1
-            loss.backward()
-            train_loss_all += loss.item()
-            train_count += torch.max(data.batch) + 1
-            optimizer.step()
-
-        autoencoder.eval()
-        val_loss_all = 0
-        val_count = 0
-        cnt_val = 0
-        val_loss_all_recon = 0
-        val_loss_all_kld = 0
-
-        for data in val_loader:
-            data = data.to(device)
-            loss, recon, kld = autoencoder.loss_function(data)
-            val_loss_all_recon += recon.item()
-            val_loss_all_kld += kld.item()
-            val_loss_all += loss.item()
-            cnt_val += 1
-            val_count += torch.max(data.batch) + 1
-
-        if epoch % 1 == 0:
-            dt_t = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            print(
-                "{} Epoch: {:04d}, Train Loss: {:.5f}, Train Reconstruction Loss: {:.2f}, Train KLD Loss: {:.2f}, Val Loss: {:.5f}, Val Reconstruction Loss: {:.2f}, Val KLD Loss: {:.2f}".format(
-                    dt_t,
-                    epoch,
-                    train_loss_all / cnt_train,
-                    train_loss_all_recon / cnt_train,
-                    train_loss_all_kld / cnt_train,
-                    val_loss_all / cnt_val,
-                    val_loss_all_recon / cnt_val,
-                    val_loss_all_kld / cnt_val,
-                )
-            )
-
-        scheduler.step()
-
-        if best_val_loss >= val_loss_all:
-            best_val_loss = val_loss_all
-            torch.save(
-                {
-                    "state_dict": autoencoder.state_dict(),
-                    "optimizer": optimizer.state_dict(),
-                },
-                "autoencoder.pth.tar",
-            )
+    train_autoencoder(
+        model=autoencoder,
+        train_dataloader=train_loader,
+        val_dataloader=val_loader,
+        optimizer=optimizer,
+        scheduler=scheduler,
+        epoch_number=args.epochs_autoencoder,
+        device=device,
+        verbose=True,
+    )
 else:
-    checkpoint = torch.load("autoencoder.pth.tar")
-    autoencoder.load_state_dict(checkpoint["state_dict"])
+    load_model_checkpoint(autoencoder, optimizer, os.path.join(os.dirname(__file__), "..", "..", "checkpoints", "autoencoder.pth.tar"))
 
 autoencoder.eval()
 
