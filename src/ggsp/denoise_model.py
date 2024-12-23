@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
 def extract(a, t, x_shape):
     batch_size = t.shape[0]
     out = a.gather(-1, t.cpu())
@@ -10,7 +11,9 @@ def extract(a, t, x_shape):
 
 
 # forward diffusion (using the nice property)
-def q_sample(x_start, t, sqrt_alphas_cumprod, sqrt_one_minus_alphas_cumprod, noise=None):
+def q_sample(
+    x_start, t, sqrt_alphas_cumprod, sqrt_one_minus_alphas_cumprod, noise=None
+):
     if noise is None:
         noise = torch.randn_like(x_start)
 
@@ -23,16 +26,27 @@ def q_sample(x_start, t, sqrt_alphas_cumprod, sqrt_one_minus_alphas_cumprod, noi
 
 
 # Loss function for denoising
-def p_losses(denoise_model, x_start, t, cond, sqrt_alphas_cumprod, sqrt_one_minus_alphas_cumprod, noise=None, loss_type="l1"):
+def p_losses(
+    denoise_model,
+    x_start,
+    t,
+    cond,
+    sqrt_alphas_cumprod,
+    sqrt_one_minus_alphas_cumprod,
+    noise=None,
+    loss_type="l1",
+):
     if noise is None:
         noise = torch.randn_like(x_start)
 
-    x_noisy = q_sample(x_start, t, sqrt_alphas_cumprod, sqrt_one_minus_alphas_cumprod, noise=noise)
+    x_noisy = q_sample(
+        x_start, t, sqrt_alphas_cumprod, sqrt_one_minus_alphas_cumprod, noise=noise
+    )
     predicted_noise = denoise_model(x_noisy, t, cond)
 
-    if loss_type == 'l1':
+    if loss_type == "l1":
         loss = F.l1_loss(noise, predicted_noise)
-    elif loss_type == 'l2':
+    elif loss_type == "l2":
         loss = F.mse_loss(noise, predicted_noise)
     elif loss_type == "huber":
         loss = F.smooth_l1_loss(noise, predicted_noise)
@@ -77,11 +91,13 @@ class DenoiseNN(nn.Module):
             nn.Linear(hidden_dim, hidden_dim),
         )
 
-        mlp_layers = [nn.Linear(input_dim+d_cond, hidden_dim)] + [nn.Linear(hidden_dim+d_cond, hidden_dim) for i in range(n_layers-2)]
+        mlp_layers = [nn.Linear(input_dim + d_cond, hidden_dim)] + [
+            nn.Linear(hidden_dim + d_cond, hidden_dim) for i in range(n_layers - 2)
+        ]
         mlp_layers.append(nn.Linear(hidden_dim, input_dim))
         self.mlp = nn.ModuleList(mlp_layers)
 
-        bn_layers = [nn.BatchNorm1d(hidden_dim) for i in range(n_layers-1)]
+        bn_layers = [nn.BatchNorm1d(hidden_dim) for i in range(n_layers - 1)]
         self.bn = nn.ModuleList(bn_layers)
 
         self.relu = nn.ReLU()
@@ -92,33 +108,31 @@ class DenoiseNN(nn.Module):
         cond = torch.nan_to_num(cond, nan=-100.0)
         cond = self.cond_mlp(cond)
         t = self.time_mlp(t)
-        for i in range(self.n_layers-1):
+        for i in range(self.n_layers - 1):
             x = torch.cat((x, cond), dim=1)
-            x = self.relu(self.mlp[i](x))+t
+            x = self.relu(self.mlp[i](x)) + t
             x = self.bn[i](x)
-        x = self.mlp[self.n_layers-1](x)
+        x = self.mlp[self.n_layers - 1](x)
         return x
 
 
 @torch.no_grad()
 def p_sample(model, x, t, cond, t_index, betas):
     # define alphas
-    alphas = 1. - betas
+    alphas = 1.0 - betas
     alphas_cumprod = torch.cumprod(alphas, axis=0)
     alphas_cumprod_prev = F.pad(alphas_cumprod[:-1], (1, 0), value=1.0)
     sqrt_recip_alphas = torch.sqrt(1.0 / alphas)
 
     # calculations for diffusion q(x_t | x_{t-1}) and others
     sqrt_alphas_cumprod = torch.sqrt(alphas_cumprod)
-    sqrt_one_minus_alphas_cumprod = torch.sqrt(1. - alphas_cumprod)
+    sqrt_one_minus_alphas_cumprod = torch.sqrt(1.0 - alphas_cumprod)
 
     # calculations for posterior q(x_{t-1} | x_t, x_0)
-    posterior_variance = betas * (1. - alphas_cumprod_prev) / (1. - alphas_cumprod)
+    posterior_variance = betas * (1.0 - alphas_cumprod_prev) / (1.0 - alphas_cumprod)
 
     betas_t = extract(betas, t, x.shape)
-    sqrt_one_minus_alphas_cumprod_t = extract(
-        sqrt_one_minus_alphas_cumprod, t, x.shape
-    )
+    sqrt_one_minus_alphas_cumprod_t = extract(sqrt_one_minus_alphas_cumprod, t, x.shape)
     sqrt_recip_alphas_t = extract(sqrt_recip_alphas, t, x.shape)
 
     # Equation 11 in the paper
@@ -135,6 +149,7 @@ def p_sample(model, x, t, cond, t_index, betas):
         # Algorithm 2 line 4:
         return model_mean + torch.sqrt(posterior_variance_t) * noise
 
+
 # Algorithm 2 (including returning all images)
 @torch.no_grad()
 def p_sample_loop(model, cond, timesteps, betas, shape):
@@ -146,11 +161,17 @@ def p_sample_loop(model, cond, timesteps, betas, shape):
     imgs = []
 
     for i in reversed(range(0, timesteps)):
-        img = p_sample(model, img, torch.full((b,), i, device=device, dtype=torch.long), cond, i, betas)
+        img = p_sample(
+            model,
+            img,
+            torch.full((b,), i, device=device, dtype=torch.long),
+            cond,
+            i,
+            betas,
+        )
         imgs.append(img)
-        #imgs.append(img.cpu().numpy())
+        # imgs.append(img.cpu().numpy())
     return imgs
-
 
 
 @torch.no_grad()
