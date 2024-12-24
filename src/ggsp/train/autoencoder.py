@@ -15,6 +15,7 @@ def train_autoencoder(
     optimizer: Optimizer,
     scheduler: _LRScheduler,
     epoch_number: int,
+    checkpoint_path: str = None,
     device: Union[str, torch.device] = "cpu",
     verbose: bool = True,
 ) -> pd.DataFrame:
@@ -27,6 +28,7 @@ def train_autoencoder(
         optimizer (Optimizer): learning rate optimizer
         scheduler (_LRScheduler): learning rate scheduler
         epoch_number (int): number of epochs
+        checkpoint_path (str, optional): path to save the best model. Defaults to None.
         device (Union[str, torch.device], optional): device. Defaults to "cpu".
         verbose (bool, optional): If True, print epochs. Defaults to True.
 
@@ -112,14 +114,14 @@ def train_autoencoder(
 
         scheduler.step()
 
-        if best_val_loss >= val_loss_all:
+        if best_val_loss >= val_loss_all and checkpoint_path is not None:
             best_val_loss = val_loss_all
             torch.save(
                 {
                     "state_dict": model.state_dict(),
                     "optimizer": optimizer.state_dict(),
                 },
-                os.path.join(os.dirname(__file__), "..", "..", "checkpoints", "autoencoder.pth.tar"),
+                checkpoint_path,
             )
 
-    return df_metrics
+    return df_metrics.reset_index(drop=True)

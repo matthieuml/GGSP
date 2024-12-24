@@ -22,7 +22,7 @@ import torch.nn.functional as F
 from torch_geometric.loader import DataLoader
 
 from ggsp.models import VariationalAutoEncoder, DenoiseNN, p_losses, sample
-from ggsp.train import train_autoencoder
+from ggsp.train import train_autoencoder, train_denoiser
 from ggsp.data import preprocess_dataset
 from ggsp.utils import linear_beta_schedule, construct_nx_from_adj, load_model_checkpoint
 
@@ -251,19 +251,6 @@ autoencoder.eval()
 # define beta schedule
 betas = linear_beta_schedule(timesteps=args.timesteps)
 
-# define alphas
-alphas = 1.0 - betas
-alphas_cumprod = torch.cumprod(alphas, axis=0)
-alphas_cumprod_prev = F.pad(alphas_cumprod[:-1], (1, 0), value=1.0)
-sqrt_recip_alphas = torch.sqrt(1.0 / alphas)
-
-# calculations for diffusion q(x_t | x_{t-1}) and others
-sqrt_alphas_cumprod = torch.sqrt(alphas_cumprod)
-sqrt_one_minus_alphas_cumprod = torch.sqrt(1.0 - alphas_cumprod)
-
-# calculations for posterior q(x_{t-1} | x_t, x_0)
-posterior_variance = betas * (1.0 - alphas_cumprod_prev) / (1.0 - alphas_cumprod)
-
 # initialize denoising model
 denoise_model = DenoiseNN(
     input_dim=args.latent_dim,
@@ -277,72 +264,23 @@ scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=500, gamma=0.1)
 
 # Train denoising model
 if args.train_denoiser:
-    best_val_loss = np.inf
-    for epoch in range(1, args.epochs_denoise + 1):
-        denoise_model.train()
-        train_loss_all = 0
-        train_count = 0
-        for data in train_loader:
-            data = data.to(device)
-            optimizer.zero_grad()
-            x_g = autoencoder.encode(data)
-            t = torch.randint(0, args.timesteps, (x_g.size(0),), device=device).long()
-            loss = p_losses(
-                denoise_model,
-                x_g,
-                t,
-                data.stats,
-                sqrt_alphas_cumprod,
-                sqrt_one_minus_alphas_cumprod,
-                loss_type="huber",
-            )
-            loss.backward()
-            train_loss_all += x_g.size(0) * loss.item()
-            train_count += x_g.size(0)
-            optimizer.step()
-
-        denoise_model.eval()
-        val_loss_all = 0
-        val_count = 0
-        for data in val_loader:
-            data = data.to(device)
-            x_g = autoencoder.encode(data)
-            t = torch.randint(0, args.timesteps, (x_g.size(0),), device=device).long()
-            loss = p_losses(
-                denoise_model,
-                x_g,
-                t,
-                data.stats,
-                sqrt_alphas_cumprod,
-                sqrt_one_minus_alphas_cumprod,
-                loss_type="huber",
-            )
-            val_loss_all += x_g.size(0) * loss.item()
-            val_count += x_g.size(0)
-
-        if epoch % 5 == 0:
-            dt_t = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            print(
-                "{} Epoch: {:04d}, Train Loss: {:.5f}, Val Loss: {:.5f}".format(
-                    dt_t, epoch, train_loss_all / train_count, val_loss_all / val_count
-                )
-            )
-
-        scheduler.step()
-
-        if best_val_loss >= val_loss_all:
-            best_val_loss = val_loss_all
-            torch.save(
-                {
-                    "state_dict": denoise_model.state_dict(),
-                    "optimizer": optimizer.state_dict(),
-                },
-                "denoise_model.pth.tar",
-            )
+    train_denoiser(
+        model=denoise_model,
+        autoencoder=autoencoder,
+        train_dataloader=train_loader,
+        val_dataloader=val_loader,
+        optimizer=optimizer,
+        scheduler=scheduler,
+        epoch_number=args.epochs_denoise,
+        diffusion_timesteps=args.timesteps,
+        beta_schedule=betas,
+        device=device,
+        verbose=True,
+        checkpoint_path=os.path.join(os.dirname(__file__), "..", "..", "checkpoints", "denoise_model.pth.tar")
+    )
 else:
-    checkpoint = torch.load("denoise_model.pth.tar")
-    denoise_model.load_state_dict(checkpoint["state_dict"])
-
+    load_model_checkpoint(denoise_model, optimizer, os.path.join(os.dirname(__file__), "..", "..", "checkpoints", "denoise_model.pth.tar"))
+    
 denoise_model.eval()
 
 del train_loader, val_loader
