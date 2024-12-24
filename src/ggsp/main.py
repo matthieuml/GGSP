@@ -60,7 +60,7 @@ parser.add_argument(
 parser.add_argument(
     "--epochs-autoencoder",
     type=int,
-    default=20,
+    default=200,
     help="Number of training epochs for the autoencoder (default: 200)",
 )
 
@@ -124,7 +124,7 @@ parser.add_argument(
 parser.add_argument(
     "--epochs-denoise",
     type=int,
-    default=10,
+    default=100,
     help="Number of training epochs for the denoising model (default: 100)",
 )
 

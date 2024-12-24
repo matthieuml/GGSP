@@ -166,3 +166,4 @@ cython_debug/
 .pixi
 *.egg-info
 *.pt
+*.pth.tar
