@@ -18,6 +18,6 @@ def extract_features_from_file(file):
     fread = open(file, "r")
     line = fread.read()
     line = line.strip()
-    stats = extract_numbers(line)
+    stats = extract_numbers_from_text(line)
     fread.close()
     return stats

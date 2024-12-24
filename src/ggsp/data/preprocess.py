@@ -11,11 +11,12 @@ from torch_geometric.data import Data
 
 from ggsp.data import extract_features_from_file, extract_numbers_from_text
 
-def preprocess_dataset(dataset, n_max_nodes, spectral_emb_dim):
+def preprocess_dataset(dataset_folder, dataset, n_max_nodes, spectral_emb_dim):
     data_lst = []
+    filename = os.path.join(dataset_folder, "dataset_" + dataset + ".pt")
     if dataset == "test":
-        filename = "./data/dataset_" + dataset + ".pt"
         desc_file = "./data/" + dataset + "/test.txt"
+        desc_file = os.path.join(dataset_folder, dataset, "test.txt")
 
         if os.path.isfile(filename):
             data_lst = torch.load(filename)
@@ -37,9 +38,8 @@ def preprocess_dataset(dataset, n_max_nodes, spectral_emb_dim):
             print(f"Dataset {filename} saved")
 
     else:
-        filename = "./data/dataset_" + dataset + ".pt"
-        graph_path = "./data/" + dataset + "/graph"
-        desc_path = "./data/" + dataset + "/description"
+        graph_path = os.path.join(dataset_folder, dataset, "graph")
+        desc_path = os.path.join(dataset_folder, dataset, "description")
 
         if os.path.isfile(filename):
             data_lst = torch.load(filename)

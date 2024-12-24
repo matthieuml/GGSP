@@ -9,7 +9,8 @@ from torch_geometric.loader import DataLoader
 from ggsp.models import VariationalAutoEncoder, DenoiseNN
 from ggsp.train import train_autoencoder, train_denoiser
 from ggsp.data import preprocess_dataset
-from ggsp.utils import linear_beta_schedule, load_model_checkpoint, generate_submission
+from ggsp.utils import linear_beta_schedule, load_model_checkpoint
+from ggsp.runners import generate_submission
 
 
 np.random.seed(13)
@@ -186,11 +187,14 @@ parser.add_argument(
 args = parser.parse_args()
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+print(f"Device: {device}")
 
 # preprocess train data, validation data and test data. Only once for the first time that you run the code. Then the appropriate .pt files will be saved and loaded.
-trainset = preprocess_dataset("train", args.n_max_nodes, args.spectral_emb_dim)
-validset = preprocess_dataset("valid", args.n_max_nodes, args.spectral_emb_dim)
-testset = preprocess_dataset("test", args.n_max_nodes, args.spectral_emb_dim)
+dataset_folder = os.path.join(os.path.dirname(__file__), "..", "..", "data")
+trainset = preprocess_dataset(dataset_folder, "train", args.n_max_nodes, args.spectral_emb_dim)
+validset = preprocess_dataset(dataset_folder, "valid", args.n_max_nodes, args.spectral_emb_dim)
+testset = preprocess_dataset(dataset_folder, "test", args.n_max_nodes, args.spectral_emb_dim)
+print("Data loaded.")
 
 
 # initialize data loaders
