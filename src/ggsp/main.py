@@ -1,32 +1,16 @@
 import argparse
 import os
-import random
-import scipy as sp
-import pickle
 
-import shutil
-import csv
-import ast
-
-import scipy.sparse as sparse
-from tqdm import tqdm
-from torch import Tensor
-import networkx as nx
 import numpy as np
-from datetime import datetime
 import torch
-import torch.nn as nn
-from torch_geometric.data import Data
 
-import torch.nn.functional as F
 from torch_geometric.loader import DataLoader
 
-from ggsp.models import VariationalAutoEncoder, DenoiseNN, p_losses, sample
+from ggsp.models import VariationalAutoEncoder, DenoiseNN
 from ggsp.train import train_autoencoder, train_denoiser
 from ggsp.data import preprocess_dataset
-from ggsp.utils import linear_beta_schedule, construct_nx_from_adj, load_model_checkpoint
+from ggsp.utils import linear_beta_schedule, load_model_checkpoint, generate_submission
 
-from torch.utils.data import Subset
 
 np.random.seed(13)
 
@@ -280,51 +264,18 @@ if args.train_denoiser:
     )
 else:
     load_model_checkpoint(denoise_model, optimizer, os.path.join(os.dirname(__file__), "..", "..", "checkpoints", "denoise_model.pth.tar"))
-    
+
 denoise_model.eval()
 
 del train_loader, val_loader
 
-# Save to a CSV file
-with open("output.csv", "w", newline="") as csvfile:
-    writer = csv.writer(csvfile)
-    # Write the header
-    writer.writerow(["graph_id", "edge_list"])
-    for k, data in enumerate(
-        tqdm(
-            test_loader,
-            desc="Processing test set",
-        )
-    ):
-        data = data.to(device)
-
-        stat = data.stats
-        bs = stat.size(0)
-
-        graph_ids = data.filename
-
-        samples = sample(
-            denoise_model,
-            data.stats,
-            latent_dim=args.latent_dim,
-            timesteps=args.timesteps,
-            betas=betas,
-            batch_size=bs,
-        )
-        x_sample = samples[-1]
-        adj = autoencoder.decode_mu(x_sample)
-        stat_d = torch.reshape(stat, (-1, args.n_condition))
-
-        for i in range(stat.size(0)):
-            stat_x = stat_d[i]
-
-            Gs_generated = construct_nx_from_adj(adj[i, :, :].detach().cpu().numpy())
-            stat_x = stat_x.detach().cpu().numpy()
-
-            # Define a graph ID
-            graph_id = graph_ids[i]
-
-            # Convert the edge list to a single string
-            edge_list_text = ", ".join([f"({u}, {v})" for u, v in Gs_generated.edges()])
-            # Write the graph ID and the full edge list as a single row
-            writer.writerow([graph_id, edge_list_text])
+# generate submission file
+generate_submission(
+    autoencoder=autoencoder,
+    denoise_model=denoise_model,
+    beta_schedule=betas,
+    test_loader=test_loader,
+    file_path=os.path.join(os.dirname(__file__), "..", "..", "submission.csv"),
+    args=args,
+    device=device,
+)

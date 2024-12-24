@@ -2,3 +2,4 @@ from .noising_schedule import cosine_beta_schedule, linear_beta_schedule, quadra
 from .custom_layers import masked_layer_norm2D, masked_instance_norm2D
 from .graph_utils import construct_nx_from_adj
 from .utils import handle_nan, load_model_checkpoint, extract
+from .submission_generator import generate_submission
