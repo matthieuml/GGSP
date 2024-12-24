@@ -54,7 +54,7 @@ def preprocess_dataset(dataset_folder, dataset, n_max_nodes, spectral_emb_dim):
             n_nodes = []
             max_eigval = 0
             min_eigval = 0
-            for fileread in tqdm(files):
+            for fileread in tqdm(files, desc="Building graphs from files"):
                 tokens = fileread.split("/")
                 idx = tokens[-1].find(".")
                 filen = tokens[-1][:idx]

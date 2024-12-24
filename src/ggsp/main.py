@@ -60,7 +60,7 @@ parser.add_argument(
 parser.add_argument(
     "--epochs-autoencoder",
     type=int,
-    default=200,
+    default=20,
     help="Number of training epochs for the autoencoder (default: 200)",
 )
 
@@ -124,7 +124,7 @@ parser.add_argument(
 parser.add_argument(
     "--epochs-denoise",
     type=int,
-    default=100,
+    default=10,
     help="Number of training epochs for the denoising model (default: 100)",
 )
 
@@ -229,9 +229,10 @@ if args.train_autoencoder:
         epoch_number=args.epochs_autoencoder,
         device=device,
         verbose=True,
+        checkpoint_path=os.path.join(os.path.dirname(__file__), "..", "..", "checkpoints", "autoencoder.pth.tar")
     )
 else:
-    load_model_checkpoint(autoencoder, optimizer, os.path.join(os.dirname(__file__), "..", "..", "checkpoints", "autoencoder.pth.tar"))
+    load_model_checkpoint(autoencoder, optimizer, os.path.join(os.path.dirname(__file__), "..", "..", "checkpoints", "autoencoder.pth.tar"))
 
 autoencoder.eval()
 
@@ -264,10 +265,10 @@ if args.train_denoiser:
         beta_schedule=betas,
         device=device,
         verbose=True,
-        checkpoint_path=os.path.join(os.dirname(__file__), "..", "..", "checkpoints", "denoise_model.pth.tar")
+        checkpoint_path=os.path.join(os.path.dirname(__file__), "..", "..", "checkpoints", "denoise_model.pth.tar")
     )
 else:
-    load_model_checkpoint(denoise_model, optimizer, os.path.join(os.dirname(__file__), "..", "..", "checkpoints", "denoise_model.pth.tar"))
+    load_model_checkpoint(denoise_model, optimizer, os.path.join(os.path.dirname(__file__), "..", "..", "checkpoints", "denoise_model.pth.tar"))
 
 denoise_model.eval()
 
@@ -279,7 +280,7 @@ generate_submission(
     denoise_model=denoise_model,
     beta_schedule=betas,
     test_loader=test_loader,
-    file_path=os.path.join(os.dirname(__file__), "..", "..", "submission.csv"),
+    file_path=os.path.join(os.path.dirname(__file__), "..", "..", "submission.csv"),
     args=args,
     device=device,
 )
