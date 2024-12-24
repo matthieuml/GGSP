@@ -85,24 +85,32 @@ def train_autoencoder(
             cnt_val += 1
             val_count += torch.max(data.batch) + 1
 
-        df_metrics = df_metrics.append(
-            {
-                "datetime": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-                "epoch": epoch,
-                "train_loss": train_loss_all / cnt_train,
-                "train_reconstruction_loss": train_loss_all_recon / cnt_train,
-                "train_kld_loss": train_loss_all_kld / cnt_train,
-                "val_loss": val_loss_all / cnt_val,
-                "val_reconstruction_loss": val_loss_all_recon / cnt_val,
-                "val_kld_loss": val_loss_all_kld / cnt_val,
-            },
+        df_metrics = pd.concat(
+            [
+                df_metrics,
+                pd.DataFrame(
+                    {
+                        "datetime": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                        "epoch": epoch,
+                        "train_loss": train_loss_all / cnt_train,
+                        "train_reconstruction_loss": train_loss_all_recon / cnt_train,
+                        "train_kld_loss": train_loss_all_kld / cnt_train,
+                        "val_loss": val_loss_all / cnt_val,
+                        "val_reconstruction_loss": val_loss_all_recon / cnt_val,
+                        "val_kld_loss": val_loss_all_kld / cnt_val,
+                    },
+                    index=[0],
+                ),
+            ],
             ignore_index=True,
-        )
+        ).reset_index(drop=True)
+        
         if verbose:
             print(
-                "{} Epoch: {:04d}, Train Loss: {:.5f}, Train Reconstruction Loss: {:.2f}, Train KLD Loss: {:.2f}, Val Loss: {:.5f}, Val Reconstruction Loss: {:.2f}, Val KLD Loss: {:.2f}".format(
+                "{} Epoch: {:04d}/{:04d}, Train Loss: {:.5f}, Train Reconstruction Loss: {:.2f}, Train KLD Loss: {:.2f}, Val Loss: {:.5f}, Val Reconstruction Loss: {:.2f}, Val KLD Loss: {:.2f}".format(
                     df_metrics.iloc[-1]["datetime"],
                     df_metrics.iloc[-1]["epoch"],
+                    epoch_number,
                     df_metrics.iloc[-1]["train_loss"],
                     df_metrics.iloc[-1]["train_reconstruction_loss"],
                     df_metrics.iloc[-1]["train_kld_loss"],
@@ -124,4 +132,4 @@ def train_autoencoder(
                 checkpoint_path,
             )
 
-    return df_metrics.reset_index(drop=True)
+    return df_metrics

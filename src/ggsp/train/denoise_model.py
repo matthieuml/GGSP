@@ -103,22 +103,29 @@ def train_denoiser(
             val_loss_all += x_g.size(0) * loss.item()
             val_count += x_g.size(0)
 
-        df_metrics = df_metrics.append(
-            {
-                "datetime": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-                "epoch": epoch,
-                "train_huber_loss": train_loss_all / train_count,
-                "val_huber_loss": val_loss_all / val_count,
-            },
+        df_metrics = pd.concat(
+            [
+                df_metrics,
+                pd.DataFrame(
+                    {
+                        "datetime": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                        "epoch": epoch,
+                        "train_huber_loss": train_loss_all / train_count,
+                        "val_huber_loss": val_loss_all / val_count,
+                    },
+                    index=[0],
+                ),
+            ],
             ignore_index=True,
-        )
-
+        ).reset_index(drop=True)
+        
         if verbose:
             dt_t = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
             print(
-                "{} Epoch: {:04d}, Train Loss: {:.5f}, Val Loss: {:.5f}".format(
+                "{} Epoch: {:04d}/{:04d}, Train Loss: {:.5f}, Val Loss: {:.5f}".format(
                     df_metrics.iloc[-1]["datetime"],
                     df_metrics.iloc[-1]["epoch"],
+                    epoch_number,
                     df_metrics.iloc[-1]["train_huber_loss"],
                     df_metrics.iloc[-1]["val_huber_loss"],
                 )
@@ -135,3 +142,5 @@ def train_denoiser(
                 },
                 checkpoint_path
             )
+
+    return df_metrics
