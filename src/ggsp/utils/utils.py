@@ -2,12 +2,16 @@ import math
 import torch
 from torch.optim.optimizer import Optimizer
 
+
 def handle_nan(x):
     if math.isnan(x):
         return float(-100)
     return x
 
-def load_model_checkpoint(model: torch.nn.Module, optimizer: Optimizer, checkpoint_path: str):
+
+def load_model_checkpoint(
+    model: torch.nn.Module, optimizer: Optimizer, checkpoint_path: str
+):
     """Load model checkpoint.
 
     Args:

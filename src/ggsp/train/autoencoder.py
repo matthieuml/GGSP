@@ -8,6 +8,7 @@ from torch.utils.data import DataLoader
 from torch.optim.optimizer import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler
 
+
 def train_autoencoder(
     model: torch.nn.Module,
     train_dataloader: DataLoader,
@@ -19,7 +20,7 @@ def train_autoencoder(
     device: Union[str, torch.device] = "cpu",
     verbose: bool = True,
 ) -> pd.DataFrame:
-    """Train autoencoder model.   
+    """Train autoencoder model.
 
     Args:
         model (torch.nn.Module): autoencoder model to train
@@ -37,15 +38,15 @@ def train_autoencoder(
     """
     df_metrics = pd.DataFrame(
         columns=[
-                "datetime",
-                "epoch",
-                "train_loss",
-                "train_reconstruction_loss",
-                "train_kld_loss",
-                "val_loss",
-                "val_reconstruction_loss",
-                "val_kld_loss",
-            ]
+            "datetime",
+            "epoch",
+            "train_loss",
+            "train_reconstruction_loss",
+            "train_kld_loss",
+            "val_loss",
+            "val_reconstruction_loss",
+            "val_kld_loss",
+        ]
     )
 
     best_val_loss = np.inf
@@ -104,7 +105,7 @@ def train_autoencoder(
             ],
             ignore_index=True,
         ).reset_index(drop=True)
-        
+
         if verbose:
             print(
                 "{} Epoch: {:04d}/{:04d}, Train Loss: {:.5f}, Train Reconstruction Loss: {:.2f}, Train KLD Loss: {:.2f}, Val Loss: {:.5f}, Val Reconstruction Loss: {:.2f}, Val KLD Loss: {:.2f}".format(

@@ -10,6 +10,7 @@ from torch.optim.lr_scheduler import _LRScheduler
 
 from ggsp.metrics import p_losses
 
+
 def train_denoiser(
     model: torch.nn.Module,
     autoencoder: torch.nn.Module,
@@ -45,11 +46,11 @@ def train_denoiser(
     """
     df_metrics = pd.DataFrame(
         columns=[
-                "datetime",
-                "epoch",
-                "train_huber_loss",
-                "val_huber_loss",
-            ]
+            "datetime",
+            "epoch",
+            "train_huber_loss",
+            "val_huber_loss",
+        ]
     )
 
     # define alphas
@@ -69,7 +70,9 @@ def train_denoiser(
             data = data.to(device)
             optimizer.zero_grad()
             x_g = autoencoder.encode(data)
-            t = torch.randint(0, diffusion_timesteps, (x_g.size(0),), device=device).long()
+            t = torch.randint(
+                0, diffusion_timesteps, (x_g.size(0),), device=device
+            ).long()
             loss = p_losses(
                 model,
                 x_g,
@@ -90,7 +93,9 @@ def train_denoiser(
         for data in val_dataloader:
             data = data.to(device)
             x_g = autoencoder.encode(data)
-            t = torch.randint(0, diffusion_timesteps, (x_g.size(0),), device=device).long()
+            t = torch.randint(
+                0, diffusion_timesteps, (x_g.size(0),), device=device
+            ).long()
             loss = p_losses(
                 model,
                 x_g,
@@ -118,7 +123,7 @@ def train_denoiser(
             ],
             ignore_index=True,
         ).reset_index(drop=True)
-        
+
         if verbose:
             dt_t = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
             print(
@@ -140,7 +145,7 @@ def train_denoiser(
                     "state_dict": model.state_dict(),
                     "optimizer": optimizer.state_dict(),
                 },
-                checkpoint_path
+                checkpoint_path,
             )
 
     return df_metrics

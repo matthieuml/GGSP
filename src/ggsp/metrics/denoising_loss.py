@@ -2,6 +2,7 @@ import torch
 import torch.nn.functional as F
 from ggsp.models import q_sample
 
+
 def p_losses(
     denoise_model,
     x_start,

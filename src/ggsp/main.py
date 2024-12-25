@@ -191,9 +191,15 @@ print(f"Device: {device}")
 
 # preprocess train data, validation data and test data. Only once for the first time that you run the code. Then the appropriate .pt files will be saved and loaded.
 dataset_folder = os.path.join(os.path.dirname(__file__), "..", "..", "data")
-trainset = preprocess_dataset(dataset_folder, "train", args.n_max_nodes, args.spectral_emb_dim)
-validset = preprocess_dataset(dataset_folder, "valid", args.n_max_nodes, args.spectral_emb_dim)
-testset = preprocess_dataset(dataset_folder, "test", args.n_max_nodes, args.spectral_emb_dim)
+trainset = preprocess_dataset(
+    dataset_folder, "train", args.n_max_nodes, args.spectral_emb_dim
+)
+validset = preprocess_dataset(
+    dataset_folder, "valid", args.n_max_nodes, args.spectral_emb_dim
+)
+testset = preprocess_dataset(
+    dataset_folder, "test", args.n_max_nodes, args.spectral_emb_dim
+)
 print("Data loaded.")
 
 
@@ -229,10 +235,18 @@ if args.train_autoencoder:
         epoch_number=args.epochs_autoencoder,
         device=device,
         verbose=True,
-        checkpoint_path=os.path.join(os.path.dirname(__file__), "..", "..", "checkpoints", "autoencoder.pth.tar")
+        checkpoint_path=os.path.join(
+            os.path.dirname(__file__), "..", "..", "checkpoints", "autoencoder.pth.tar"
+        ),
     )
 else:
-    load_model_checkpoint(autoencoder, optimizer, os.path.join(os.path.dirname(__file__), "..", "..", "checkpoints", "autoencoder.pth.tar"))
+    load_model_checkpoint(
+        autoencoder,
+        optimizer,
+        os.path.join(
+            os.path.dirname(__file__), "..", "..", "checkpoints", "autoencoder.pth.tar"
+        ),
+    )
 
 autoencoder.eval()
 
@@ -265,10 +279,26 @@ if args.train_denoiser:
         beta_schedule=betas,
         device=device,
         verbose=True,
-        checkpoint_path=os.path.join(os.path.dirname(__file__), "..", "..", "checkpoints", "denoise_model.pth.tar")
+        checkpoint_path=os.path.join(
+            os.path.dirname(__file__),
+            "..",
+            "..",
+            "checkpoints",
+            "denoise_model.pth.tar",
+        ),
     )
 else:
-    load_model_checkpoint(denoise_model, optimizer, os.path.join(os.path.dirname(__file__), "..", "..", "checkpoints", "denoise_model.pth.tar"))
+    load_model_checkpoint(
+        denoise_model,
+        optimizer,
+        os.path.join(
+            os.path.dirname(__file__),
+            "..",
+            "..",
+            "checkpoints",
+            "denoise_model.pth.tar",
+        ),
+    )
 
 denoise_model.eval()
 
