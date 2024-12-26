@@ -64,7 +64,7 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
         load_model_checkpoint(autoencoder, vae_optimizer, args.vae_load_checkpoint_path)
 
     if args.train_autoencoder:
-        train_autoencoder(
+        vae_metrics = train_autoencoder(
             model=autoencoder,
             train_dataloader=train_loader,
             val_dataloader=val_loader,
@@ -75,6 +75,7 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
             verbose=args.verbose,
             checkpoint_path=args.vae_save_checkpoint_path,
         )
+        vae_metrics.to_csv(args.vae_metrics_path, index=False)
 
     autoencoder.eval()
 
@@ -104,7 +105,7 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
 
     # Train denoising model
     if args.train_denoise:
-        train_denoiser(
+        denoise_metrics = train_denoiser(
             model=denoise_model,
             autoencoder=autoencoder,
             train_dataloader=train_loader,
@@ -114,10 +115,12 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
             epoch_number=args.epochs_denoise,
             diffusion_timesteps=args.timesteps,
             beta_schedule=betas,
+            loss_type=args.denoise_loss_type,
             device=device,
             verbose=args.verbose,
             checkpoint_path=args.denoise_save_checkpoint_path,
         )
+        denoise_metrics.to_csv(args.denoise_metrics_path, index=False)
 
     denoise_model.eval()
     del train_loader, val_loader

@@ -21,6 +21,7 @@ def train_denoiser(
     epoch_number: int,
     diffusion_timesteps: int,
     beta_schedule: torch.Tensor,
+    loss_type: str = "huber",
     checkpoint_path: str = None,
     device: Union[str, torch.device] = "cpu",
     verbose: bool = True,
@@ -37,6 +38,7 @@ def train_denoiser(
         epoch_number (int): number of epochs
         diffusion_timesteps (int): number of diffusion timesteps
         beta_schedule (torch.Tensor): noising beta schedule
+        loss_type (str, optional): loss type. Defaults to "huber".
         checkpoint_path (str, optional): path to save the best model. Defaults to None.
         device (Union[str, torch.device], optional): device. Defaults to "cpu".
         verbose (bool, optional): If True, print epochs. Defaults to True.
@@ -48,8 +50,8 @@ def train_denoiser(
         columns=[
             "datetime",
             "epoch",
-            "train_huber_loss",
-            "val_huber_loss",
+            f"train_{loss_type}_loss",
+            f"val_{loss_type}_loss",
         ]
     )
 
@@ -80,7 +82,7 @@ def train_denoiser(
                 data.stats,
                 sqrt_alphas_cumprod,
                 sqrt_one_minus_alphas_cumprod,
-                loss_type="huber",
+                loss_type=loss_type,
             )
             loss.backward()
             train_loss_all += x_g.size(0) * loss.item()
@@ -103,7 +105,7 @@ def train_denoiser(
                 data.stats,
                 sqrt_alphas_cumprod,
                 sqrt_one_minus_alphas_cumprod,
-                loss_type="huber",
+                loss_type=loss_type,
             )
             val_loss_all += x_g.size(0) * loss.item()
             val_count += x_g.size(0)
@@ -115,8 +117,8 @@ def train_denoiser(
                     {
                         "datetime": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
                         "epoch": epoch,
-                        "train_huber_loss": train_loss_all / train_count,
-                        "val_huber_loss": val_loss_all / val_count,
+                        f"train_{loss_type}_loss": train_loss_all / train_count,
+                        f"val_{loss_type}_loss": val_loss_all / val_count,
                     },
                     index=[0],
                 ),
@@ -131,8 +133,8 @@ def train_denoiser(
                     df_metrics.iloc[-1]["datetime"],
                     df_metrics.iloc[-1]["epoch"],
                     epoch_number,
-                    df_metrics.iloc[-1]["train_huber_loss"],
-                    df_metrics.iloc[-1]["val_huber_loss"],
+                    df_metrics.iloc[-1][f"train_{loss_type}_loss"],
+                    df_metrics.iloc[-1][f"val_{loss_type}_loss"],
                 )
             )
 
