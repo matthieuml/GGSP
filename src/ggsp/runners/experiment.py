@@ -29,9 +29,15 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
         args.dataset_folder, "test", args.n_max_nodes, args.spectral_emb_dim
     )
 
-    train_loader = DataLoader(trainset, batch_size=args.batch_size, shuffle=args.shuffle_train)
-    val_loader = DataLoader(validset, batch_size=args.batch_size, shuffle=args.shuffle_val)
-    test_loader = DataLoader(testset, batch_size=args.batch_size, shuffle=args.shuffle_test)
+    train_loader = DataLoader(
+        trainset, batch_size=args.batch_size, shuffle=args.shuffle_train
+    )
+    val_loader = DataLoader(
+        validset, batch_size=args.batch_size, shuffle=args.shuffle_val
+    )
+    test_loader = DataLoader(
+        testset, batch_size=args.batch_size, shuffle=args.shuffle_test
+    )
 
     # initialize VGAE model
     autoencoder = VariationalAutoEncoder(

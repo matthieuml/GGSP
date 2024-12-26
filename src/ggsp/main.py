@@ -10,19 +10,27 @@ def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="")
 
     parser.add_argument(
-        "--config", type=str, default=os.path.join(os.path.dirname(__file__), "base.yaml"), help="Path to the config file"
+        "--config",
+        type=str,
+        default=os.path.join(os.path.dirname(__file__), "base.yaml"),
+        help="Path to the config file",
     )
 
     return parser.parse_args()
 
 
-
 if __name__ == "__main__":
     args = parse_arguments()
     args = load_yaml_into_namespace(args.config, args)
-    args.exp_path, args.checkpoints_path, args.visualizations_path = make_dirs(args.exp_path)
-    args.vae_save_checkpoint_path = os.path.join(args.checkpoints_path, "best_autoencoder_checkpoint.pth.tar")
-    args.denoise_save_checkpoint_path = os.path.join(args.checkpoints_path, "best_denoiser_checkpoint.pth.tar")
+    args.exp_path, args.checkpoints_path, args.visualizations_path = make_dirs(
+        args.exp_path
+    )
+    args.vae_save_checkpoint_path = os.path.join(
+        args.checkpoints_path, "best_autoencoder_checkpoint.pth.tar"
+    )
+    args.denoise_save_checkpoint_path = os.path.join(
+        args.checkpoints_path, "best_denoiser_checkpoint.pth.tar"
+    )
     args.submission_file_path = os.path.join(args.exp_path, "submission.csv")
     args = load_yaml_into_namespace(args.config, args)
 

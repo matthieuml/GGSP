@@ -36,14 +36,16 @@ def extract(a, t, x_shape):
     return out.reshape(batch_size, *((1,) * (len(x_shape) - 1))).to(t.device)
 
 
-def load_yaml_into_namespace(yaml_file: str, namespace: argparse.Namespace) -> argparse.Namespace:
+def load_yaml_into_namespace(
+    yaml_file: str, namespace: argparse.Namespace
+) -> argparse.Namespace:
     """
     Load a YAML file and merge its content into the given argparse Namespace.
-    
+
     Args:
         yaml_file (str): Path to the YAML file.
         namespace (argparse.Namespace): The current Namespace object.
-    
+
     Returns:
         argparse.Namespace: Updated Namespace with the values from the YAML file.
     """
@@ -89,16 +91,16 @@ def make_dirs(
 def set_seed(seed: int) -> None:
     """
     Set the seed for Python's random module, numpy, and PyTorch to ensure reproducibility.
-    
+
     Args:
         seed (int): The seed value to set.
     """
     # Python's built-in random module
     random.seed(seed)
-    
+
     # Numpy
     np.random.seed(seed)
-    
+
     # PyTorch
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
