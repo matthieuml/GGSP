@@ -10,6 +10,7 @@ from torch.optim.lr_scheduler import _LRScheduler
 
 logger = logging.getLogger("GGSP")
 
+
 def train_autoencoder(
     model: torch.nn.Module,
     train_dataloader: DataLoader,
@@ -125,7 +126,9 @@ def train_autoencoder(
         scheduler.step()
 
         if best_val_loss >= val_loss_all and checkpoint_path is not None:
-            logger.debug(f"New best checkpoint found at epoch {epoch}, saving to {checkpoint_path}")
+            logger.debug(
+                f"New best checkpoint found at epoch {epoch}, saving to {checkpoint_path}"
+            )
             best_val_loss = val_loss_all
             torch.save(
                 {

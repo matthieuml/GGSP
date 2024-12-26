@@ -14,6 +14,7 @@ from ggsp.data import extract_features_from_file, extract_numbers_from_text
 
 logger = logging.getLogger("GGSP")
 
+
 def base_preprocess_dataset(dataset_folder, dataset, n_max_nodes, spectral_emb_dim):
     logger.debug("Using the base_preprocess_dataset function to preprocess the dataset")
     data_lst = []
@@ -51,7 +52,9 @@ def base_preprocess_dataset(dataset_folder, dataset, n_max_nodes, spectral_emb_d
             logger.info(f"Dataset {filename} loaded from file")
 
         else:
-            logger.debug(f"Builde label graphs through all files of the folder {graph_path}")
+            logger.debug(
+                f"Builde label graphs through all files of the folder {graph_path}"
+            )
             # traverse through all the graphs of the folder
             files = [f for f in os.listdir(graph_path)]
             adjs = []

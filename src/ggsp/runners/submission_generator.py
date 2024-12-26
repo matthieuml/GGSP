@@ -11,6 +11,7 @@ from ggsp.utils import construct_nx_from_adj
 
 logger = logging.getLogger("GGSP")
 
+
 def generate_submission(
     autoencoder: torch.nn.Module,
     denoise_model: torch.nn.Module,
@@ -32,7 +33,9 @@ def generate_submission(
         args (argparse.Namespace): arguments
         device (Union[str, torch.device], optional): device. Defaults to "cpu".
     """
-    logger.info(f"Generating submission file: {file_path} by evaluating the model on the test set")
+    logger.info(
+        f"Generating submission file: {file_path} by evaluating the model on the test set"
+    )
 
     with open(file_path, "w", newline="") as csvfile:
         writer = csv.writer(csvfile)

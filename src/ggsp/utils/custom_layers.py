@@ -3,6 +3,7 @@ import torch
 
 # TODO : Not used in the project but was on the original code
 
+
 def masked_instance_norm2D(x: torch.Tensor, mask: torch.Tensor, eps: float = 1e-5):
     """
     x: [batch_size (N), num_objects (L), num_objects (L), features(C)]

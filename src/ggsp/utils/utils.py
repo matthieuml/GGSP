@@ -22,7 +22,9 @@ def load_model_checkpoint(
         optimizer (Optimizer): optimizer to load
         checkpoint_path (str): checkpoint path
     """
-    logger.debug(f"Loading checkpoint of model {model.__class__.__name__} from {checkpoint_path}")
+    logger.debug(
+        f"Loading checkpoint of model {model.__class__.__name__} from {checkpoint_path}"
+    )
     checkpoint = torch.load(checkpoint_path)
     model.load_state_dict(checkpoint["state_dict"])
     optimizer.load_state_dict(checkpoint["optimizer"])
@@ -125,11 +127,11 @@ def set_seed(seed: int) -> None:
 def copy_file(source: str, destination: str) -> None:
     """
     Copies a file from the source path to the destination path.
-    
+
     Args:
         source (str): Path to the source file.
         destination (str): Path to the destination file or directory.
-    
+
     Returns:
         None
     """

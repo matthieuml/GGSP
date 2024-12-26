@@ -12,6 +12,7 @@ from ggsp.metrics import p_losses
 
 logger = logging.getLogger("GGSP")
 
+
 def train_denoiser(
     model: torch.nn.Module,
     autoencoder: torch.nn.Module,
@@ -143,7 +144,9 @@ def train_denoiser(
         scheduler.step()
 
         if best_val_loss >= val_loss_all and checkpoint_path is not None:
-            logger.debug(f"New best checkpoint found at epoch {epoch}, saving to {checkpoint_path}")
+            logger.debug(
+                f"New best checkpoint found at epoch {epoch}, saving to {checkpoint_path}"
+            )
             best_val_loss = val_loss_all
             torch.save(
                 {

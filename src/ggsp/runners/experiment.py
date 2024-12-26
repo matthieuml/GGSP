@@ -13,6 +13,7 @@ from ggsp.runners import generate_submission
 
 logger = logging.getLogger("GGSP")
 
+
 def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -> None:
     """Run the experiment with the NeuralGraphGenerator model.
 
@@ -84,7 +85,7 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
         vae_metrics.to_csv(args.vae_metrics_path, index=False)
 
         logger.debug(f"VAE Training finished")
-    
+
     logger.debug(f"Switching {autoencoder.__class__.__name__} model to eval mode")
     autoencoder.eval()
 
