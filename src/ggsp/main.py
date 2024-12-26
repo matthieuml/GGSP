@@ -1,6 +1,12 @@
 import argparse
 import os
 import torch
+import sys
+
+script_path = os.path.abspath(__file__)
+project_root = os.path.dirname(os.path.dirname(script_path))
+print(project_root)
+sys.path.append(project_root)
 
 from ggsp.utils import load_yaml_into_namespace, make_dirs, set_seed, copy_file
 from ggsp.runners import run_experiment
