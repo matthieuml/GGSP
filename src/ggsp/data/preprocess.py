@@ -12,7 +12,7 @@ from torch_geometric.data import Data
 from ggsp.data import extract_features_from_file, extract_numbers_from_text
 
 
-def preprocess_dataset(dataset_folder, dataset, n_max_nodes, spectral_emb_dim):
+def base_preprocess_dataset(dataset_folder, dataset, n_max_nodes, spectral_emb_dim):
     data_lst = []
     filename = os.path.join(dataset_folder, "dataset_" + dataset + ".pt")
     if dataset == "test":

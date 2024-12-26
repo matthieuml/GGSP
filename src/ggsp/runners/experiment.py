@@ -3,7 +3,7 @@ import torch
 from torch_geometric.loader import DataLoader
 from typing import Union
 
-from ggsp.data import preprocess_dataset
+from ggsp.data import *
 from ggsp.models import VariationalAutoEncoder, DenoiseNN
 from ggsp.train import train_autoencoder, train_denoiser
 from ggsp.utils import load_model_checkpoint, linear_beta_schedule
@@ -19,13 +19,13 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
     """
 
     # Load the dataset
-    trainset = preprocess_dataset(
+    trainset = globals()[args.dataset_preprocessing_function](
         args.dataset_folder, "train", args.n_max_nodes, args.spectral_emb_dim
     )
-    validset = preprocess_dataset(
+    validset = globals()[args.dataset_preprocessing_function](
         args.dataset_folder, "valid", args.n_max_nodes, args.spectral_emb_dim
     )
-    testset = preprocess_dataset(
+    testset = globals()[args.dataset_preprocessing_function](
         args.dataset_folder, "test", args.n_max_nodes, args.spectral_emb_dim
     )
 
