@@ -1,5 +1,5 @@
 import torch
-import os
+import logging
 import numpy as np
 import pandas as pd
 from typing import Union
@@ -10,6 +10,7 @@ from torch.optim.lr_scheduler import _LRScheduler
 
 from ggsp.metrics import p_losses
 
+logger = logging.getLogger("GGSP")
 
 def train_denoiser(
     model: torch.nn.Module,
@@ -24,7 +25,6 @@ def train_denoiser(
     loss_type: str = "huber",
     checkpoint_path: str = None,
     device: Union[str, torch.device] = "cpu",
-    verbose: bool = True,
 ) -> pd.DataFrame:
     """Train denoiser model.
 
@@ -46,6 +46,9 @@ def train_denoiser(
     Returns:
         pd.DataFrame: dataframe with train and validation metrics
     """
+    logger.info(f"Training {model.__class__.__name__} model over {epoch_number} epochs")
+    logger.debug(f"Using {loss_type} loss")
+
     df_metrics = pd.DataFrame(
         columns=[
             "datetime",
@@ -65,6 +68,7 @@ def train_denoiser(
 
     best_val_loss = np.inf
     for epoch in range(1, epoch_number + 1):
+        logger.debug(f"Epoch: {epoch}, switching model to train mode")
         model.train()
         train_loss_all = 0
         train_count = 0
@@ -89,6 +93,7 @@ def train_denoiser(
             train_count += x_g.size(0)
             optimizer.step()
 
+        logger.debug(f"Epoch: {epoch}, switching model to eval mode")
         model.eval()
         val_loss_all = 0
         val_count = 0
@@ -126,21 +131,19 @@ def train_denoiser(
             ignore_index=True,
         ).reset_index(drop=True)
 
-        if verbose:
-            dt_t = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            print(
-                "{} Epoch: {:04d}/{:04d}, Train Loss: {:.5f}, Val Loss: {:.5f}".format(
-                    df_metrics.iloc[-1]["datetime"],
-                    df_metrics.iloc[-1]["epoch"],
-                    epoch_number,
-                    df_metrics.iloc[-1][f"train_{loss_type}_loss"],
-                    df_metrics.iloc[-1][f"val_{loss_type}_loss"],
-                )
+        logger.info(
+            "Epoch: {:04d}/{:04d}, Train Loss: {:.5f}, Val Loss: {:.5f}".format(
+                df_metrics.iloc[-1]["epoch"],
+                epoch_number,
+                df_metrics.iloc[-1][f"train_{loss_type}_loss"],
+                df_metrics.iloc[-1][f"val_{loss_type}_loss"],
             )
+        )
 
         scheduler.step()
 
         if best_val_loss >= val_loss_all and checkpoint_path is not None:
+            logger.debug(f"New best checkpoint found at epoch {epoch}, saving to {checkpoint_path}")
             best_val_loss = val_loss_all
             torch.save(
                 {

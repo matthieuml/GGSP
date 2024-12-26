@@ -1,4 +1,5 @@
-exp_path: ./run/experiment
+exp_path: ./run
+exp_name: experiment
 
 # =========== Dataset parameters ===========
 
@@ -43,6 +44,7 @@ dim_condition: 128 # Dimensionality of conditioning vectors for conditional gene
 # Diffusion training parameters
 train_denoise: True # Whether to train the diffusion model
 epochs_denoise: 100 # Number of training epochs for the denoising model (default: 100)
+noising_schedule_function: linear_beta_schedule # Function to schedule the noise level during training (default: linear_beta_schedule)
 denoise_loss_type: huber # Loss function type for the denoising model (default: huber)
 denoise_lr: 0.001 # Learning rate for the denoising model optimizer, typically a small float value (default: 0.001)
 denoise_scheduler_step_size: 500 # Period of learning rate decay for the denoising model optimizer (default: 500)
@@ -52,8 +54,9 @@ denoise_save_checkpoint: True
 
 
 # =========== Evaluation ===========
-# submission_file_path: null
-verbose: True # Whether to print additional information during training and evaluation
+submission_file: True
 
+# =========== Logging ===========
+verbose: True # Whether to print additional information during training and evaluation
 save_logs: True # Whether to save logs during training and evaluation
 log_level: INFO # Logging level for the application (default: INFO)

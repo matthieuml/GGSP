@@ -5,14 +5,11 @@ import os
 import random
 import yaml
 import shutil
+import logging
 import numpy as np
 from torch.optim.optimizer import Optimizer
 
-
-def handle_nan(x):
-    if math.isnan(x):
-        return float(-100)
-    return x
+logger = logging.getLogger("GGSP")
 
 
 def load_model_checkpoint(
@@ -25,9 +22,11 @@ def load_model_checkpoint(
         optimizer (Optimizer): optimizer to load
         checkpoint_path (str): checkpoint path
     """
+    logger.debug(f"Loading checkpoint of model {model.__class__.__name__} from {checkpoint_path}")
     checkpoint = torch.load(checkpoint_path)
     model.load_state_dict(checkpoint["state_dict"])
     optimizer.load_state_dict(checkpoint["optimizer"])
+    logger.info(f"Loaded checkpoint from {checkpoint_path}")
     return model, optimizer
 
 
@@ -57,6 +56,7 @@ def load_yaml_into_namespace(
     # Merge the YAML data into the Namespace
     namespace_dict = vars(namespace)  # Convert Namespace to dictionary
     namespace_dict.update(yaml_data)  # Update with YAML data
+    logger.debug(f"Loaded YAML file: {yaml_file} as config")
     return argparse.Namespace(**namespace_dict)  # Convert back to Namespace
 
 
@@ -84,7 +84,9 @@ def make_dirs(
     check_point_path = os.path.join(experiment_path, "checkpoints")
     visualizations_path = os.path.join(experiment_path, "visuals")
     os.makedirs(check_point_path, exist_ok=True)
+    logger.debug(f"Created directories for the experiment at {experiment_path}")
     os.makedirs(visualizations_path, exist_ok=True)
+    logger.debug(f"Created directories for the experiment at {visualizations_path}")
 
     return experiment_path, check_point_path, visualizations_path
 
@@ -98,20 +100,26 @@ def set_seed(seed: int) -> None:
     """
     # Python's built-in random module
     random.seed(seed)
+    logger.debug(f"Set seed for random module to {seed}")
 
     # Numpy
     np.random.seed(seed)
+    logger.debug(f"Set seed for numpy to {seed}")
 
     # PyTorch
     torch.manual_seed(seed)
+    logger.debug(f"Set seed for PyTorch to {seed}")
     torch.cuda.manual_seed(seed)
+    logger.debug(f"Set seed for PyTorch CUDA to {seed}")
     torch.cuda.manual_seed_all(seed)  # For multi-GPU environments
+    logger.debug(f"Set seed for all GPUs to {seed}")
 
     # Ensure deterministic behavior in PyTorch (if applicable)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
+    logger.debug("Set PyTorch backend to deterministic mode")
 
-    print(f"Seeds set to {seed}")
+    logger.info(f"Set seed for all random number generators to seed {seed}")
 
 
 def copy_file(source: str, destination: str) -> None:
@@ -127,6 +135,6 @@ def copy_file(source: str, destination: str) -> None:
     """
     try:
         shutil.copy(source, destination)
-        print(f"File copied from {source} to {destination}")
+        logger.debug(f"Copied file from {source} to {destination}")
     except Exception as e:
-        print(f"Error copying file: {e}")
+        logger.error(f"Failed to copy file from {source} to {destination}")

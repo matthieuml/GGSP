@@ -1,14 +1,17 @@
 import argparse
 import torch
+import logging
 from torch_geometric.loader import DataLoader
 from typing import Union
 
 from ggsp.data import *
 from ggsp.models import VariationalAutoEncoder, DenoiseNN
 from ggsp.train import train_autoencoder, train_denoiser
-from ggsp.utils import load_model_checkpoint, linear_beta_schedule
+from ggsp.utils import load_model_checkpoint
+from ggsp.utils.noising_schedule import *
 from ggsp.runners import generate_submission
 
+logger = logging.getLogger("GGSP")
 
 def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -> None:
     """Run the experiment with the NeuralGraphGenerator model.
@@ -38,6 +41,10 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
     test_loader = DataLoader(
         testset, batch_size=args.batch_size, shuffle=args.shuffle_test
     )
+
+    logger.info(f"Train set size: {len(trainset)}")
+    logger.info(f"Validation set size: {len(validset)}")
+    logger.info(f"Test set size: {len(testset)}")
 
     # initialize VGAE model
     autoencoder = VariationalAutoEncoder(
@@ -72,15 +79,18 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
             scheduler=vae_scheduler,
             epoch_number=args.epochs_autoencoder,
             device=device,
-            verbose=args.verbose,
             checkpoint_path=args.vae_save_checkpoint_path,
         )
         vae_metrics.to_csv(args.vae_metrics_path, index=False)
 
+        logger.debug(f"VAE Training finished")
+    
+    logger.debug(f"Switching {autoencoder.__class__.__name__} model to eval mode")
     autoencoder.eval()
 
     # define beta schedule
-    betas = linear_beta_schedule(timesteps=args.timesteps)
+    logger.debug(f"Using {args.noising_schedule_function} function as noising schedule")
+    betas = globals()[args.noising_schedule_function](timesteps=args.timesteps)
 
     # initialize denoising model
     denoise_model = DenoiseNN(
@@ -117,7 +127,6 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
             beta_schedule=betas,
             loss_type=args.denoise_loss_type,
             device=device,
-            verbose=args.verbose,
             checkpoint_path=args.denoise_save_checkpoint_path,
         )
         denoise_metrics.to_csv(args.denoise_metrics_path, index=False)

@@ -3,6 +3,7 @@ import networkx as nx
 import numpy as np
 import scipy as sp
 import torch
+import logging
 import torch.nn.functional as F
 
 from tqdm import tqdm
@@ -11,8 +12,10 @@ from torch_geometric.data import Data
 
 from ggsp.data import extract_features_from_file, extract_numbers_from_text
 
+logger = logging.getLogger("GGSP")
 
 def base_preprocess_dataset(dataset_folder, dataset, n_max_nodes, spectral_emb_dim):
+    logger.debug("Using the base_preprocess_dataset function to preprocess the dataset")
     data_lst = []
     filename = os.path.join(dataset_folder, "dataset_" + dataset + ".pt")
     if dataset == "test":
@@ -21,9 +24,10 @@ def base_preprocess_dataset(dataset_folder, dataset, n_max_nodes, spectral_emb_d
 
         if os.path.isfile(filename):
             data_lst = torch.load(filename)
-            print(f"Dataset {filename} loaded from file")
+            logger.info(f"Dataset {filename} loaded from file")
 
         else:
+            logger.debug(f"Computing dataset {dataset} embeddings")
             fr = open(desc_file, "r")
             for line in fr:
                 line = line.strip()
@@ -36,7 +40,7 @@ def base_preprocess_dataset(dataset_folder, dataset, n_max_nodes, spectral_emb_d
                 data_lst.append(Data(stats=feats_stats, filename=graph_id))
             fr.close()
             torch.save(data_lst, filename)
-            print(f"Dataset {filename} saved")
+            logger.info(f"Saving dataset {dataset} embeddings to {filename}")
 
     else:
         graph_path = os.path.join(dataset_folder, dataset, "graph")
@@ -44,9 +48,10 @@ def base_preprocess_dataset(dataset_folder, dataset, n_max_nodes, spectral_emb_d
 
         if os.path.isfile(filename):
             data_lst = torch.load(filename)
-            print(f"Dataset {filename} loaded from file")
+            logger.info(f"Dataset {filename} loaded from file")
 
         else:
+            logger.debug(f"Builde label graphs through all files of the folder {graph_path}")
             # traverse through all the graphs of the folder
             files = [f for f in os.listdir(graph_path)]
             adjs = []
@@ -119,6 +124,7 @@ def base_preprocess_dataset(dataset_folder, dataset, n_max_nodes, spectral_emb_d
                 adj = F.pad(adj, [0, size_diff, 0, size_diff])
                 adj = adj.unsqueeze(0)
 
+                logger.debug(f"Extracting features from dataset {fstats}")
                 feats_stats = extract_features_from_file(fstats)
                 feats_stats = torch.FloatTensor(feats_stats).unsqueeze(0)
 
@@ -132,5 +138,5 @@ def base_preprocess_dataset(dataset_folder, dataset, n_max_nodes, spectral_emb_d
                     )
                 )
             torch.save(data_lst, filename)
-            print(f"Dataset {filename} saved")
+            logger.info(f"Dataset {filename} built and saved")
     return data_lst
