@@ -1,8 +1,9 @@
 import argparse
 import os
 import torch
+import yaml
 
-from ggsp.utils import load_yaml_into_namespace, make_dirs, set_seed
+from ggsp.utils import load_yaml_into_namespace, make_dirs, set_seed, copy_file
 from ggsp.runners import run_experiment
 
 
@@ -27,12 +28,12 @@ if __name__ == "__main__":
     )
     args.vae_save_checkpoint_path = os.path.join(
         args.checkpoints_path, "best_autoencoder_checkpoint.pth.tar"
-    )
+    ) if args.vae_save_checkpoint else None
     args.denoise_save_checkpoint_path = os.path.join(
         args.checkpoints_path, "best_denoiser_checkpoint.pth.tar"
-    )
+    ) if args.denoise_save_checkpoint else None
     args.submission_file_path = os.path.join(args.exp_path, "submission.csv")
-    args = load_yaml_into_namespace(args.config, args)
+    copy_file(args.config, os.path.join(args.exp_path, "config.yaml"))
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     set_seed(args.seed)

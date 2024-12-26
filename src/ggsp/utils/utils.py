@@ -4,6 +4,7 @@ import argparse
 import os
 import random
 import yaml
+import shutil
 import numpy as np
 from torch.optim.optimizer import Optimizer
 
@@ -111,3 +112,21 @@ def set_seed(seed: int) -> None:
     torch.backends.cudnn.benchmark = False
 
     print(f"Seeds set to {seed}")
+
+
+def copy_file(source: str, destination: str) -> None:
+    """
+    Copies a file from the source path to the destination path.
+    
+    Args:
+        source (str): Path to the source file.
+        destination (str): Path to the destination file or directory.
+    
+    Returns:
+        None
+    """
+    try:
+        shutil.copy(source, destination)
+        print(f"File copied from {source} to {destination}")
+    except Exception as e:
+        print(f"Error copying file: {e}")

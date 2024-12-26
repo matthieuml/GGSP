@@ -30,7 +30,7 @@ vae_lr: 0.001 # Learning rate for the VAE optimizer, typically a small float val
 vae_scheduler_step_size: 500 # Period of learning rate decay for the VAE optimizer (default: 500)
 vae_scheduler_gamma: 0.1 # Multiplicative factor of learning rate decay for the VAE optimizer (default: 0.1)
 vae_load_checkpoint_path: null # Path to a checkpoint to load the model from (can restart training from)
-# vae_save_checkpoint_path: null # Path to save the trained model checkpoint
+vae_save_checkpoint: False
 
 # Diffusion parameters
 timesteps: 500 # Number of timesteps for the diffusion (default: 500)
@@ -46,7 +46,7 @@ denoise_lr: 0.001 # Learning rate for the denoising model optimizer, typically a
 denoise_scheduler_step_size: 500 # Period of learning rate decay for the denoising model optimizer (default: 500)
 vae_scheduler_gamma: 0.1 # Multiplicative factor of learning rate decay for the denoising model optimizer (default: 0.1)
 denoise_load_checkpoint_path: null # Path to a checkpoint to load the model from (can restart training from)
-# denoise_save_checkpoint_path: null # Path to save the trained model checkpoint
+denoise_save_checkpoint: True
 
 
 # =========== Evaluation ===========
