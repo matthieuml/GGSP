@@ -33,6 +33,10 @@ def load_model_checkpoint(
 
 
 def extract(a, t, x_shape):
+    """Extract the values from a tensor a at the indices t.
+
+    a.gather(-1, t) is equivalent to a[..., t]
+    """
     batch_size = t.shape[0]
     out = a.gather(-1, t.cpu())
     return out.reshape(batch_size, *((1,) * (len(x_shape) - 1))).to(t.device)
