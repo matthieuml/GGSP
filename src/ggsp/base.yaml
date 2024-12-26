@@ -15,6 +15,8 @@ shuffle_test: False # Should be always False to fit submission format
 seed: 42 # Seed for random number generators, fixing the randomness in the application (default: 42)
 
 # VAE model parameters
+encoder_classname: GIN # Encoder class name for the VAE model (default: GGNN)
+decoder_classname: Decoder # Decoder class name for the VAE model (default: Decoder)
 hidden_dim_encoder: 64 # Hidden dimension size for encoder layers (default: 64)
 hidden_dim_decoder: 256 # Hidden dimension size for decoder layers (default: 256)
 latent_dim: 32 # Dimensionality of the latent space in the autoencoder (default: 32)

@@ -48,6 +48,8 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
         args.n_layers_encoder,
         args.n_layers_decoder,
         args.n_max_nodes,
+        args.encoder_classname,
+        args.decoder_classname,
     ).to(device)
 
     vae_optimizer = torch.optim.Adam(autoencoder.parameters(), lr=args.vae_lr)
