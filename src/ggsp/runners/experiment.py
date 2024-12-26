@@ -1,6 +1,7 @@
 import argparse
 import torch
-from torch.utils.data import DataLoader
+from torch_geometric.loader import DataLoader
+from typing import Union
 
 from ggsp.data import preprocess_dataset
 from ggsp.models import VariationalAutoEncoder, DenoiseNN
@@ -9,11 +10,12 @@ from ggsp.utils import load_model_checkpoint, linear_beta_schedule
 from ggsp.runners import generate_submission
 
 
-def run_experiment(args: argparse.Namespace):
+def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -> None:
     """Run the experiment with the NeuralGraphGenerator model.
 
     Args:
         args (argparse.Namespace): arguments of the experiment
+        device (Union[str, torch.device]): device to run the experiment on
     """
 
     # Load the dataset
@@ -27,9 +29,9 @@ def run_experiment(args: argparse.Namespace):
         args.dataset_folder, "test", args.n_max_nodes, args.spectral_emb_dim
     )
 
-    train_loader = DataLoader(trainset, batch_size=args.batch_size, shuffle=True)
-    val_loader = DataLoader(validset, batch_size=args.batch_size, shuffle=False)
-    test_loader = DataLoader(testset, batch_size=args.batch_size, shuffle=False)
+    train_loader = DataLoader(trainset, batch_size=args.batch_size, shuffle=args.shuffle_train)
+    val_loader = DataLoader(validset, batch_size=args.batch_size, shuffle=args.shuffle_val)
+    test_loader = DataLoader(testset, batch_size=args.batch_size, shuffle=args.shuffle_test)
 
     # initialize VGAE model
     autoencoder = VariationalAutoEncoder(
@@ -40,7 +42,7 @@ def run_experiment(args: argparse.Namespace):
         args.n_layers_encoder,
         args.n_layers_decoder,
         args.n_max_nodes,
-    ).to(args.device)
+    ).to(device)
 
     vae_optimizer = torch.optim.Adam(autoencoder.parameters(), lr=args.vae_lr)
     vae_scheduler = torch.optim.lr_scheduler.StepLR(
@@ -61,7 +63,7 @@ def run_experiment(args: argparse.Namespace):
             optimizer=vae_optimizer,
             scheduler=vae_scheduler,
             epoch_number=args.epochs_autoencoder,
-            device=args.device,
+            device=device,
             verbose=args.verbose,
             checkpoint_path=args.vae_save_checkpoint_path,
         )
@@ -78,9 +80,9 @@ def run_experiment(args: argparse.Namespace):
         n_layers=args.n_layers_denoise,
         n_cond=args.n_condition,
         d_cond=args.dim_condition,
-    ).to(args.device)
+    ).to(device)
 
-    denoise_optimizer = torch.optim.Adam(denoise_model.parameters(), lr=args.lr)
+    denoise_optimizer = torch.optim.Adam(denoise_model.parameters(), lr=args.denoise_lr)
     denoise_scheduler = torch.optim.lr_scheduler.StepLR(
         denoise_optimizer,
         step_size=args.denoise_scheduler_step_size,
@@ -104,7 +106,7 @@ def run_experiment(args: argparse.Namespace):
             epoch_number=args.epochs_denoise,
             diffusion_timesteps=args.timesteps,
             beta_schedule=betas,
-            device=args.device,
+            device=device,
             verbose=args.verbose,
             checkpoint_path=args.denoise_save_checkpoint_path,
         )
@@ -121,5 +123,5 @@ def run_experiment(args: argparse.Namespace):
             test_loader=test_loader,
             file_path=args.submission_file_path,
             args=args,
-            device=args.device,
+            device=device,
         )
