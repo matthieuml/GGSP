@@ -1,37 +1,34 @@
 import os
-import math
 import networkx as nx
 import numpy as np
 import scipy as sp
-import scipy.sparse
 import torch
+import logging
 import torch.nn.functional as F
-import community as community_louvain
 
-from torch import Tensor
-from torch.utils.data import Dataset
-
-from grakel.utils import graph_from_networkx
-from grakel.kernels import WeisfeilerLehman, VertexHistogram
 from tqdm import tqdm
 import scipy.sparse as sparse
 from torch_geometric.data import Data
 
-from extract_feats import extract_feats, extract_numbers
+from ggsp.data import extract_features_from_file, extract_numbers_from_text
+
+logger = logging.getLogger("GGSP")
 
 
-def preprocess_dataset(dataset, n_max_nodes, spectral_emb_dim):
-
+def base_preprocess_dataset(dataset_folder, dataset, n_max_nodes, spectral_emb_dim):
+    logger.debug("Using the base_preprocess_dataset function to preprocess the dataset")
     data_lst = []
+    filename = os.path.join(dataset_folder, "dataset_" + dataset + ".pt")
     if dataset == "test":
-        filename = "./data/dataset_" + dataset + ".pt"
         desc_file = "./data/" + dataset + "/test.txt"
+        desc_file = os.path.join(dataset_folder, dataset, "test.txt")
 
         if os.path.isfile(filename):
             data_lst = torch.load(filename)
-            print(f"Dataset {filename} loaded from file")
+            logger.info(f"Dataset {filename} loaded from file")
 
         else:
+            logger.debug(f"Computing dataset {dataset} embeddings")
             fr = open(desc_file, "r")
             for line in fr:
                 line = line.strip()
@@ -39,23 +36,25 @@ def preprocess_dataset(dataset, n_max_nodes, spectral_emb_dim):
                 graph_id = tokens[0]
                 desc = tokens[1:]
                 desc = "".join(desc)
-                feats_stats = extract_numbers(desc)
+                feats_stats = extract_numbers_from_text(desc)
                 feats_stats = torch.FloatTensor(feats_stats).unsqueeze(0)
                 data_lst.append(Data(stats=feats_stats, filename=graph_id))
             fr.close()
             torch.save(data_lst, filename)
-            print(f"Dataset {filename} saved")
+            logger.info(f"Saving dataset {dataset} embeddings to {filename}")
 
     else:
-        filename = "./data/dataset_" + dataset + ".pt"
-        graph_path = "./data/" + dataset + "/graph"
-        desc_path = "./data/" + dataset + "/description"
+        graph_path = os.path.join(dataset_folder, dataset, "graph")
+        desc_path = os.path.join(dataset_folder, dataset, "description")
 
         if os.path.isfile(filename):
             data_lst = torch.load(filename)
-            print(f"Dataset {filename} loaded from file")
+            logger.info(f"Dataset {filename} loaded from file")
 
         else:
+            logger.debug(
+                f"Builde label graphs through all files of the folder {graph_path}"
+            )
             # traverse through all the graphs of the folder
             files = [f for f in os.listdir(graph_path)]
             adjs = []
@@ -64,7 +63,7 @@ def preprocess_dataset(dataset, n_max_nodes, spectral_emb_dim):
             n_nodes = []
             max_eigval = 0
             min_eigval = 0
-            for fileread in tqdm(files):
+            for fileread in tqdm(files, desc="Building graphs from files"):
                 tokens = fileread.split("/")
                 idx = tokens[-1].find(".")
                 filen = tokens[-1][:idx]
@@ -128,7 +127,8 @@ def preprocess_dataset(dataset, n_max_nodes, spectral_emb_dim):
                 adj = F.pad(adj, [0, size_diff, 0, size_diff])
                 adj = adj.unsqueeze(0)
 
-                feats_stats = extract_feats(fstats)
+                logger.debug(f"Extracting features from dataset {fstats}")
+                feats_stats = extract_features_from_file(fstats)
                 feats_stats = torch.FloatTensor(feats_stats).unsqueeze(0)
 
                 data_lst.append(
@@ -141,86 +141,5 @@ def preprocess_dataset(dataset, n_max_nodes, spectral_emb_dim):
                     )
                 )
             torch.save(data_lst, filename)
-            print(f"Dataset {filename} saved")
+            logger.info(f"Dataset {filename} built and saved")
     return data_lst
-
-
-def construct_nx_from_adj(adj):
-    G = nx.from_numpy_array(adj, create_using=nx.Graph)
-    to_remove = []
-    for node in G.nodes():
-        if G.degree(node) == 0:
-            to_remove.append(node)
-    G.remove_nodes_from(to_remove)
-    return G
-
-
-def handle_nan(x):
-    if math.isnan(x):
-        return float(-100)
-    return x
-
-
-def masked_instance_norm2D(x: torch.Tensor, mask: torch.Tensor, eps: float = 1e-5):
-    """
-    x: [batch_size (N), num_objects (L), num_objects (L), features(C)]
-    mask: [batch_size (N), num_objects (L), num_objects (L), 1]
-    """
-    mask = mask.view(x.size(0), x.size(1), x.size(2), 1).expand_as(x)
-    mean = torch.sum(x * mask, dim=[1, 2]) / torch.sum(mask, dim=[1, 2])  # (N,C)
-    var_term = (
-        (x - mean.unsqueeze(1).unsqueeze(1).expand_as(x)) * mask
-    ) ** 2  # (N,L,L,C)
-    var = torch.sum(var_term, dim=[1, 2]) / torch.sum(mask, dim=[1, 2])  # (N,C)
-    mean = mean.unsqueeze(1).unsqueeze(1).expand_as(x)  # (N, L, L, C)
-    var = var.unsqueeze(1).unsqueeze(1).expand_as(x)  # (N, L, L, C)
-    instance_norm = (x - mean) / torch.sqrt(var + eps)  # (N, L, L, C)
-    instance_norm = instance_norm * mask
-    return instance_norm
-
-
-def masked_layer_norm2D(x: torch.Tensor, mask: torch.Tensor, eps: float = 1e-5):
-    """
-    x: [batch_size (N), num_objects (L), num_objects (L), features(C)]
-    mask: [batch_size (N), num_objects (L), num_objects (L), 1]
-    """
-    mask = mask.view(x.size(0), x.size(1), x.size(2), 1).expand_as(x)
-    mean = torch.sum(x * mask, dim=[3, 2, 1]) / torch.sum(mask, dim=[3, 2, 1])  # (N)
-    var_term = ((x - mean.view(-1, 1, 1, 1).expand_as(x)) * mask) ** 2  # (N,L,L,C)
-    var = torch.sum(var_term, dim=[3, 2, 1]) / torch.sum(mask, dim=[3, 2, 1])  # (N)
-    mean = mean.view(-1, 1, 1, 1).expand_as(x)  # (N, L, L, C)
-    var = var.view(-1, 1, 1, 1).expand_as(x)  # (N, L, L, C)
-    layer_norm = (x - mean) / torch.sqrt(var + eps)  # (N, L, L, C)
-    layer_norm = layer_norm * mask
-    return layer_norm
-
-
-def cosine_beta_schedule(timesteps, s=0.008):
-    """
-    cosine schedule as proposed in https://arxiv.org/abs/2102.09672
-    """
-    steps = timesteps + 1
-    x = torch.linspace(0, timesteps, steps)
-    alphas_cumprod = torch.cos(((x / timesteps) + s) / (1 + s) * torch.pi * 0.5) ** 2
-    alphas_cumprod = alphas_cumprod / alphas_cumprod[0]
-    betas = 1 - (alphas_cumprod[1:] / alphas_cumprod[:-1])
-    return torch.clip(betas, 0.0001, 0.9999)
-
-
-def linear_beta_schedule(timesteps):
-    beta_start = 0.0001
-    beta_end = 0.02
-    return torch.linspace(beta_start, beta_end, timesteps)
-
-
-def quadratic_beta_schedule(timesteps):
-    beta_start = 0.0001
-    beta_end = 0.02
-    return torch.linspace(beta_start**0.5, beta_end**0.5, timesteps) ** 2
-
-
-def sigmoid_beta_schedule(timesteps):
-    beta_start = 0.0001
-    beta_end = 0.02
-    betas = torch.linspace(-6, 6, timesteps)
-    return torch.sigmoid(betas) * (beta_end - beta_start) + beta_start
