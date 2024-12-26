@@ -1,9 +1,4 @@
-import os
-from tqdm import tqdm
-import random
 import re
-
-random.seed(32)
 
 
 def extract_numbers_from_text(text):

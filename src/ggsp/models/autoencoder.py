@@ -2,9 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from torch_geometric.nn import GINConv
-from torch_geometric.nn import global_add_pool
-
 from ggsp.models.decoders import *
 from ggsp.models.encoders import *
 
