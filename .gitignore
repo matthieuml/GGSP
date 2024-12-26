@@ -167,3 +167,6 @@ cython_debug/
 *.egg-info
 *.pt
 *.pth.tar
+
+# remove runs
+run
