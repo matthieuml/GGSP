@@ -15,7 +15,7 @@ from ggsp.utils import (
     copy_file,
     setup_logger,
 )
-from ggsp.runners import run_experiment
+from ggsp.runners import run_experiment, run_grid_search
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -26,6 +26,14 @@ def parse_arguments() -> argparse.Namespace:
         type=str,
         default=os.path.join(os.path.dirname(__file__), "base.yaml"),
         help="Path to the config file",
+    )
+
+    parser.add_argument(
+        "--mode",
+        type=str,
+        default="experiment",
+        choices=["experiment", "grid_search"],
+        help="Mode of the experiment",
     )
 
     return parser.parse_args()
@@ -72,4 +80,10 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logger.info(f"Using device: {device}")
     set_seed(args.seed)
-    run_experiment(args, device)
+    if args.mode == "experiment":
+        run_experiment(args, device)
+    elif args.mode == "grid_search":
+        run_grid_search(args, device)
+    else:
+        raise ValueError("Invalid mode")
+    
