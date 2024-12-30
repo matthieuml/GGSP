@@ -101,7 +101,7 @@ def get_all_file_id() -> dict:
     return {item["id"]: item["name"] for item in items}
 
 
-def upload_file(filename: str) -> str:
+def upload_file(filepath: str) -> str:
     """
     Upload the file from local folder to the GGSP Drive folder
 
@@ -109,11 +109,7 @@ def upload_file(filename: str) -> str:
         filename (str): The filename of the file you want to upload
     """
     # Extract the filename and the file id if it exists
-    filename = os.path.basename(filename)
-    filepath = os.path.join(SOURCE_PATH, filename)
-    print(os.getcwd(), filepath)
-    if not os.path.exists(filepath):
-        filepath = os.path.join(DESTINATION_PATH, filename)
+    filename = os.path.basename(filepath)
     file_id = get_file_id(filename)
 
     # Convert the file to a media object (that can be forwarded)

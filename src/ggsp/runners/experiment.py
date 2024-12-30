@@ -10,6 +10,8 @@ from ggsp.train import train_autoencoder, train_denoiser
 from ggsp.utils import load_model_checkpoint
 from ggsp.utils.noising_schedule import *
 from ggsp.runners import generate_submission
+from ggsp.metrics import absolute_loss_features
+from ggsp.models import sample
 
 logger = logging.getLogger("GGSP")
 
@@ -133,7 +135,24 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
         denoise_metrics.to_csv(args.denoise_metrics_path, index=False)
 
     denoise_model.eval()
-    del train_loader, val_loader
+    del train_loader
+
+    loss_val = []
+    for data in val_loader:
+        samples = sample(
+                denoise_model,
+                data.stats,
+                latent_dim=args.latent_dim,
+                timesteps=args.timesteps,
+                betas=betas,
+                batch_size=data.stats.size(0)
+            )
+        x_sample = samples[-1]
+        adj = autoencoder.decode_mu(x_sample)
+        loss_val.append(absolute_loss_features(adj, data.A, data).sum().item())
+
+    print(f"MAE on validation set: {round(np.sum(loss_val)/len(validset), 2)}")
+    del val_loader
 
     # Generate submission file on the test set
     if args.submission_file_path is not None:

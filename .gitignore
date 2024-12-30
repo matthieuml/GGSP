@@ -170,3 +170,5 @@ cython_debug/
 
 # remove runs
 run
+
+*.DS_Store
