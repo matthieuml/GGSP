@@ -1,3 +1,5 @@
+import os
+import sys
 import csv
 import torch
 import argparse
@@ -5,13 +7,13 @@ import logging
 from tqdm import tqdm
 from typing import Union
 from torch.utils.data import DataLoader
-import sys
-import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'drive'))
-from gdrive import upload_file
 
-from ggsp.models import sample
-from ggsp.utils import construct_nx_from_adj
+# Add the parent directory to sys.path
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'drive'))
+from gdrive import upload_file  # noqa: E402
+
+from ggsp.models import sample  # noqa: E402
+from ggsp.utils import construct_nx_from_adj  # noqa: E402
 
 logger = logging.getLogger("GGSP")
 
@@ -87,7 +89,7 @@ def generate_submission(
                 )
                 # Write the graph ID and the full edge list as a single row
                 writer.writerow([graph_id, edge_list_text])
-        
-        # Upload the file to the GGSP Drive
-        print(file_path)
-        upload_file(file_path)
+
+    # Upload the file to the GGSP Drive
+    suffix_filename = "_" + file_path.split('/')[-2] + "_Sully"
+    upload_file(file_path, suffix_filename=suffix_filename)

@@ -1,10 +1,5 @@
 import os
-
 import sys
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
-
-from dotenv import load_dotenv
-load_dotenv(os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
 
 # Import the Google Auth Library
 from google.oauth2 import service_account
@@ -19,6 +14,11 @@ import pandas as pd
 import io
 
 from concurrent.futures import ProcessPoolExecutor, as_completed
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
+from dotenv import load_dotenv  # noqa: E402
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
+
 
 if os.getcwd() == os.path.dirname(__file__):
     os.chdir(os.path.join(os.getcwd(), "..", ".."))
@@ -101,7 +101,7 @@ def get_all_file_id() -> dict:
     return {item["id"]: item["name"] for item in items}
 
 
-def upload_file(filepath: str) -> str:
+def upload_file(filepath: str, suffix_filename: str = None) -> str:
     """
     Upload the file from local folder to the GGSP Drive folder
 
@@ -110,6 +110,8 @@ def upload_file(filepath: str) -> str:
     """
     # Extract the filename and the file id if it exists
     filename = os.path.basename(filepath)
+    if suffix_filename is not None:
+        filename = filename.replace(".csv", "") + suffix_filename + ".csv"
     file_id = get_file_id(filename)
 
     # Convert the file to a media object (that can be forwarded)
@@ -209,7 +211,7 @@ def upload_all_files() -> None:
         except Exception as exc:
             warnings.warn(f'Task generated an exception: {exc}')
 
-    print(f"All tasks have been completed")
+    print("All tasks have been completed")
 
 
 def download_all_files() -> None:
