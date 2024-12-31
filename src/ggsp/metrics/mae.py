@@ -5,8 +5,11 @@ import torch
 from ggsp.utils import construct_nx_from_adj
 
 def compute_features(graph):
+    if isinstance(graph, torch.Tensor):
+            graph = graph.detach().cpu().numpy()
+
     if isinstance(graph, np.ndarray) or isinstance(graph, torch.Tensor):
-        graph = construct_nx_from_adj(graph.detach().cpu().numpy())
+        graph = construct_nx_from_adj(graph)
 
     return np.array([graph.number_of_nodes(), 
                      graph.number_of_edges(),
