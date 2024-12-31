@@ -17,7 +17,7 @@ def compute_features(graph):
                      len(list(greedy_modularity_communities(graph)))])
 
 
-def absolute_loss_features(graph_preds, graphs, data):
+def absolute_loss_features(graph_preds, graphs):
     """
     Compute the mean absolute error between two graphs
     """
