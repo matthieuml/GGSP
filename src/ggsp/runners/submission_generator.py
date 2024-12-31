@@ -91,5 +91,7 @@ def generate_submission(
                 writer.writerow([graph_id, edge_list_text])
 
     # Upload the file to the GGSP Drive
-    suffix_filename = "_" + file_path.split('/')[-2] + "_Sully"
+    if "user" not in args:
+        args.user = "Anonymous"
+    suffix_filename = "_" + file_path.split('/')[-2] + "_" + args.user
     upload_file(file_path, suffix_filename=suffix_filename)
