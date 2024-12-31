@@ -149,7 +149,7 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
             )
         x_sample = samples[-1]
         adj = autoencoder.decode_mu(x_sample)
-        loss_val.append(absolute_loss_features(adj, data.A, data).sum().item())
+        loss_val.append(absolute_loss_features(adj, data.A).sum().item())
 
     print(f"MAE on validation set: {round(np.sum(loss_val)/len(validset), 2)}")
     del val_loader
