@@ -4,11 +4,15 @@ import numpy as np
 import torch
 from ggsp.utils import construct_nx_from_adj
 
-def compute_features(graph):
-    if isinstance(graph, np.ndarray) or isinstance(graph, torch.Tensor):
-        graph = construct_nx_from_adj(graph.detach().cpu().numpy())
 
-    return np.array([graph.number_of_nodes(), 
+def compute_features(graph):
+    if isinstance(graph, torch.Tensor):
+        graph = graph.detach().cpu().numpy()
+
+    if isinstance(graph, np.ndarray) or isinstance(graph, torch.Tensor):
+        graph = construct_nx_from_adj(graph)
+
+    return np.array([graph.number_of_nodes(),
                      graph.number_of_edges(),
                      np.mean([deg for _, deg in graph.degree()]),
                      sum(nx.triangles(graph).values()) // 3,
@@ -17,7 +21,7 @@ def compute_features(graph):
                      len(list(greedy_modularity_communities(graph)))])
 
 
-def absolute_loss_features(graph_preds, graphs):
+def absolute_loss_features(graph_preds, graphs, data):
     """
     Compute the mean absolute error between two graphs
     """

@@ -12,6 +12,7 @@ from ggsp.utils.noising_schedule import *
 from ggsp.runners import generate_submission
 from ggsp.metrics import absolute_loss_features
 from ggsp.models import sample
+import numpy as np
 
 logger = logging.getLogger("GGSP")
 
@@ -139,6 +140,7 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
 
     loss_val = []
     for data in val_loader:
+        data = data.to(device)
         samples = sample(
                 denoise_model,
                 data.stats,
