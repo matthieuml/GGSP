@@ -139,6 +139,7 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
 
     loss_val = []
     for data in val_loader:
+        data = data.to(device)
         samples = sample(
                 denoise_model,
                 data.stats,
