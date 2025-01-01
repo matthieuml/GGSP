@@ -92,7 +92,7 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
     logger.debug(f"Switching {autoencoder.__class__.__name__} model to eval mode")
     autoencoder.eval()
 
-    if args.graph_metric is not None:
+    if args.graph_metric is not None and args.train_autoencoder:
         mae_loss = 0
         for data in tqdm(
             val_loader,
@@ -148,7 +148,7 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
         denoise_metrics.to_csv(args.denoise_metrics_path, index=False)
 
     denoise_model.eval()
-    if args.graph_metric is not None:
+    if args.graph_metric is not None and args.train_denoise:
         mae_loss = 0
         for data in tqdm(
             val_loader,
