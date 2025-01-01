@@ -103,8 +103,9 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
             graph_losses = torch.cat(
                 (graph_losses, graph_norm_from_adj(adj.detach().numpy(), data.A.detach().numpy(), norm_type=args.graph_metric))
             )
-
-        logger.info(f"{args.graph_metric} loss on VAE: {graph_losses.mean().item()}")
+        
+        # TODO : Remove the division by batch size, just to fit to kaggle results
+        logger.info(f"{args.graph_metric} loss on VAE: {graph_losses.mean().item() / args.batch_size}")
 
     # define beta schedule
     logger.debug(f"Using {args.noising_schedule_function} function as noising schedule")
@@ -173,7 +174,8 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
                 (graph_losses, graph_norm_from_adj(adj.detach().numpy(), data.A.detach().numpy(), norm_type=args.graph_metric))
             )
 
-        logger.info(f"{args.graph_metric} loss on global pipeline: {graph_losses.mean().item()}")
+        # TODO : Remove the division by batch size, just to fit to kaggle results
+        logger.info(f"{args.graph_metric} loss on global pipeline: {graph_losses.mean().item() / args.batch_size}")
 
 
     del train_loader, val_loader

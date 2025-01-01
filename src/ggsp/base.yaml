@@ -15,7 +15,6 @@ shuffle_test: False # Should be always False to fit submission format
 
 # =========== Models ===========
 seed: 42 # Seed for random number generators, fixing the randomness in the application (default: 42)
-graph_metric: L1 # Metric used to compute the distance between graphs can be None for no computing (default: L1)
 
 # VAE model parameters
 encoder_classname: GIN # Encoder class name for the VAE model (default: GGNN)
@@ -32,7 +31,7 @@ epochs_autoencoder: 200 # Number of training epochs for the autoencoder (default
 vae_lr: 0.001 # Learning rate for the VAE optimizer, typically a small float value (default: 0.001)
 vae_scheduler_step_size: 500 # Period of learning rate decay for the VAE optimizer (default: 500)
 vae_scheduler_gamma: 0.1 # Multiplicative factor of learning rate decay for the VAE optimizer (default: 0.1)
-vae_kld_weight: 0.01 # Weight of the KLD loss in the VAE loss function (default: 0.01)
+vae_kld_weight: 0.05 # Weight of the KLD loss in the VAE loss function (default: 0.05)
 vae_load_checkpoint_path: null # Path to a checkpoint to load the model from (can restart training from)
 vae_save_checkpoint: True
 
@@ -57,6 +56,8 @@ denoise_save_checkpoint: True
 
 # =========== Evaluation ===========
 submission_file: True
+graph_metric: MAE # Metric used to compute the distance between graphs can be None for no computing (default: MAE)
+
 
 # =========== Logging ===========
 verbose: True # Whether to print additional information during training and evaluation
