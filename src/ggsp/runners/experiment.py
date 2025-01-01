@@ -101,7 +101,7 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
             data = data.to(device)
             adj = autoencoder(data)
             graph_losses = torch.cat(
-                (graph_losses, graph_norm_from_adj(adj.detach().numpy(), data.A.detach().numpy(), norm_type=args.graph_metric))
+                (graph_losses, graph_norm_from_adj(adj.cpu().detach().numpy(), data.A.cpu().detach().numpy(), norm_type=args.graph_metric))
             )
         
         # TODO : Remove the division by batch size, just to fit to kaggle results
@@ -171,7 +171,7 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
             x_sample = samples[-1]
             adj = autoencoder.decode_mu(x_sample)
             graph_losses = torch.cat(
-                (graph_losses, graph_norm_from_adj(adj.detach().numpy(), data.A.detach().numpy(), norm_type=args.graph_metric))
+                (graph_losses, graph_norm_from_adj(adj.cpu().detach().numpy(), data.A.cpu().detach().numpy(), norm_type=args.graph_metric))
             )
 
         # TODO : Remove the division by batch size, just to fit to kaggle results

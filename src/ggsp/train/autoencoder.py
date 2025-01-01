@@ -85,7 +85,7 @@ def train_autoencoder(
 
         for data in val_dataloader:
             data = data.to(device)
-            loss, recon, kld = model.loss_function(data)
+            loss, recon, kld = model.loss_function(data, beta=kld_weight)
             val_loss_all_recon += recon.item()
             val_loss_all_kld += kld.item()
             val_loss_all += loss.item()
