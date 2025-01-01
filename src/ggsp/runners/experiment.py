@@ -83,6 +83,7 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
             epoch_number=args.epochs_autoencoder,
             device=device,
             checkpoint_path=args.vae_save_checkpoint_path,
+            kld_weight=args.vae_kld_weight,
         )
         vae_metrics.to_csv(args.vae_metrics_path, index=False)
 
