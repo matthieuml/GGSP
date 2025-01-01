@@ -29,6 +29,8 @@ def graph_norm(graphs1: nx.Graph, graphs2: nx.Graph, norm_type: str="L1"):
         norms = torch.sqrt(torch.sum(diff**2, dim=1))
     elif norm_type == "MSE":
         norms = torch.mean(diff**2, dim=1)
+    elif norm_type == "MAE":
+        norms = torch.mean(torch.abs(diff), dim=1)
     else:
         raise ValueError(f"Unsupported norm type: {norm_type}")
 

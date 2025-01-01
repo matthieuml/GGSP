@@ -92,17 +92,19 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
     logger.debug(f"Switching {autoencoder.__class__.__name__} model to eval mode")
     autoencoder.eval()
 
-    if args.graph_metric is not None and args.train_autoencoder:
-        mae_loss = 0
+    if args.graph_metric is not None:
+        graph_losses = torch.tensor([])
         for data in tqdm(
             val_loader,
             desc="Computing graph metric on validation set",   
         ):
             data = data.to(device)
             adj = autoencoder(data)
-            mae_loss += graph_norm_from_adj(adj.detach().numpy(), data.A.detach().numpy(), norm_type=args.graph_metric).sum().item()
+            graph_losses = torch.cat(
+                (graph_losses, graph_norm_from_adj(adj.detach().numpy(), data.A.detach().numpy(), norm_type=args.graph_metric))
+            )
 
-        logger.info(f"Mean Absolute Error loss on VAE: {mae_loss / len(val_loader)}")
+        logger.info(f"{args.graph_metric} loss on VAE: {graph_losses.mean().item()}")
 
     # define beta schedule
     logger.debug(f"Using {args.noising_schedule_function} function as noising schedule")
@@ -149,7 +151,7 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
 
     denoise_model.eval()
     if args.graph_metric is not None and args.train_denoise:
-        mae_loss = 0
+        graph_losses = torch.tensor([])
         for data in tqdm(
             val_loader,
             desc="Computing graph metric on validation set",   
@@ -167,9 +169,11 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
             # Take the last sample as the denoised sample and decode it
             x_sample = samples[-1]
             adj = autoencoder.decode_mu(x_sample)
-            mae_loss += graph_norm_from_adj(adj.detach().numpy(), data.A.detach().numpy(), norm_type=args.graph_metric).sum().item()
+            graph_losses = torch.cat(
+                (graph_losses, graph_norm_from_adj(adj.detach().numpy(), data.A.detach().numpy(), norm_type=args.graph_metric))
+            )
 
-        logger.info(f"Mean Absolute Error loss on global pipeline: {mae_loss / len(val_loader)}")
+        logger.info(f"{args.graph_metric} loss on global pipeline: {graph_losses.mean().item()}")
 
 
     del train_loader, val_loader
