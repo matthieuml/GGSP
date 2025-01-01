@@ -12,10 +12,17 @@ from ggsp.utils.noising_schedule import *
 from ggsp.runners import generate_submission
 from ggsp.metrics import absolute_loss_features
 from ggsp.models import sample
+import numpy as np
 
 import optuna
 
+import warnings
+warnings.filterwarnings("ignore")
+
 logger = logging.getLogger("GGSP")
+
+EPOCHS_AUTOENCODER = 200
+EPOCHS_DENOISER = 100
 
 
 def run_grid_search(args: argparse.Namespace, device: Union[str, torch.device]) -> None:
@@ -46,39 +53,46 @@ def run_grid_search(args: argparse.Namespace, device: Union[str, torch.device]) 
 
     def objective_ggsp(trial):
 
-        # Sample hyperparameters from the trial
-        spectral_emb_dim = 10
-        hidden_dim_encoder = trial.suggest_int('hidden_dim_encoder', 16, 511)
-        hidden_dim_decoder = trial.suggest_int('hidden_dim_encoder', 16, 511)
-        n_layers_encoder = trial.suggest_int('n_layers_encoder', 2, 29)
-        n_layers_decoder = trial.suggest_int('n_layers_decoder', 2, 29)
-        latent_dim = trial.suggest_int('latent_dim', 16, 511)
-        n_max_nodes = 50
-        encoder_classname = trial.suggest_categorical('encoder_classname', ['GIN'])
-        decoder_classname = trial.suggest_categorical('decoder_classname', ['Decoder'])
-        # spectral_emb_dim = 10
-        # hidden_dim_encoder = 64
-        # hidden_dim_decoder = 256
-        # latent_dim = 32
-        # n_layers_encoder = 2
-        # n_layers_decoder = 3
+        # # Sample hyperparameters from the trial
+        # spectral_emb_dim = 11
+        # hidden_dim_encoder = trial.suggest_int('hidden_dim_encoder', 64, 511)
+        # latent_dim = trial.suggest_int('latent_dim', 16, 256)
+        # hidden_dim_decoder = trial.suggest_int('hidden_dim_decoder', 64, 511)
+        # n_layers_encoder = trial.suggest_int('n_layers_encoder', 2, 5)
+        # n_layers_decoder = trial.suggest_int('n_layers_decoder', 2, 5)
         # n_max_nodes = 50
         # encoder_classname = trial.suggest_categorical('encoder_classname', ['GIN'])
         # decoder_classname = trial.suggest_categorical('decoder_classname', ['Decoder'])
 
-        print(f"Spec dim: {spectral_emb_dim}, hidden_dim_encoder: {hidden_dim_encoder}, hidden_dim_decoder: {hidden_dim_decoder}, latent_dim: {latent_dim}, n_layers_encoder: {n_layers_encoder}, n_layers_decoder: {n_layers_decoder}, n_max_nodes: {n_max_nodes}, encoder_classname: {encoder_classname}, decoder_classname: {decoder_classname}")
+        # Sample hyperparameters from the trial
+        spectral_emb_dim = 11
+        hidden_dim_encoder = trial.suggest_int("hidden_dim_encoder", 32, 128) #256
+        latent_dim = 19
+        hidden_dim_decoder = trial.suggest_int("hidden_dim_decoder", 400, 600) #512
+        n_layers_encoder = trial.suggest_int("n_layers_encoder", 3, 10) #2
+        n_layers_decoder = trial.suggest_int("n_layers_decoder", 3, 10) #3
+        n_max_nodes = 50
+        beta = 3.5e-07
+        encoder_classname = trial.suggest_categorical('encoder_classname', ['GIN'])
+        decoder_classname = trial.suggest_categorical('decoder_classname', ['Decoder'])
+        epochs_autoencoder = trial.suggest_int("epochs_autoencoder", 50, 300) #200
+        epochs_denoiser = trial.suggest_int("epochs_denoiser", 50, 300) #100
+
+        print(f"Spec dim: {spectral_emb_dim}, hidden_dim_encoder: {hidden_dim_encoder}, hidden_dim_decoder: {hidden_dim_decoder}, latent_dim: {latent_dim}, n_layers_encoder: {n_layers_encoder}, n_layers_decoder: {n_layers_decoder}, n_max_nodes: {n_max_nodes}, beta: {beta}, encoder_classname: {encoder_classname}, decoder_classname: {decoder_classname}, epochs_autoencoder: {epochs_autoencoder},
+epochs_denoiser: {epochs_denoiser}")
 
         # initialize VGAE model
         autoencoder = VariationalAutoEncoder(
-            args.spectral_emb_dim + 1,
+            spectral_emb_dim,
             hidden_dim_encoder,
             hidden_dim_decoder,
             latent_dim,
             n_layers_encoder,
             n_layers_decoder,
-            args.n_max_nodes,
+            n_max_nodes,
             encoder_classname,
             decoder_classname,
+            beta
         ).to(device)
 
         vae_optimizer = torch.optim.Adam(autoencoder.parameters(), lr=args.vae_lr)
@@ -99,7 +113,7 @@ def run_grid_search(args: argparse.Namespace, device: Union[str, torch.device]) 
                 val_dataloader=VAL_LOADER,
                 optimizer=vae_optimizer,
                 scheduler=vae_scheduler,
-                epoch_number=50,
+                epoch_number=epochs_autoencoder,
                 device=device,
                 checkpoint_path=args.vae_save_checkpoint_path,
             )
@@ -116,7 +130,7 @@ def run_grid_search(args: argparse.Namespace, device: Union[str, torch.device]) 
 
         # initialize denoising model
         denoise_model = DenoiseNN(
-            input_dim=args.latent_dim,
+            input_dim=latent_dim,
             hidden_dim=args.hidden_dim_denoise,
             n_layers=args.n_layers_denoise,
             n_cond=args.n_condition,
@@ -144,7 +158,7 @@ def run_grid_search(args: argparse.Namespace, device: Union[str, torch.device]) 
                 val_dataloader=VAL_LOADER,
                 optimizer=denoise_optimizer,
                 scheduler=denoise_scheduler,
-                epoch_number=50,
+                epoch_number=epochs_denoiser,
                 diffusion_timesteps=args.timesteps,
                 beta_schedule=betas,
                 loss_type=args.denoise_loss_type,
@@ -157,10 +171,11 @@ def run_grid_search(args: argparse.Namespace, device: Union[str, torch.device]) 
 
         loss_val = []
         for data in VAL_LOADER:
+            data = data.to(device)
             samples = sample(
                     denoise_model,
                     data.stats,
-                    latent_dim=args.latent_dim,
+                    latent_dim=latent_dim,
                     timesteps=args.timesteps,
                     betas=betas,
                     batch_size=data.stats.size(0)
@@ -170,9 +185,9 @@ def run_grid_search(args: argparse.Namespace, device: Union[str, torch.device]) 
             loss_val.append(absolute_loss_features(adj, data.A, data).sum().item())
 
         return round(np.sum(loss_val)/len(validset), 2)
-    
+
     study = optuna.create_study(direction='minimize')
-    study.optimize(objective_ggsp, n_trials=50)
+    study.optimize(objective_ggsp, n_trials=500)
 
     # Get best hyperparameters
     best_trial = study.best_trial
