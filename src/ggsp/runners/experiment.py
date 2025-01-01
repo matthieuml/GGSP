@@ -10,7 +10,7 @@ from ggsp.train import train_autoencoder, train_denoiser
 from ggsp.utils import load_model_checkpoint
 from ggsp.utils.noising_schedule import *
 from ggsp.runners import generate_submission
-from ggsp.metrics import absolute_loss_features
+from ggsp.metrics import graph_norm_from_adj
 from ggsp.models import sample
 
 logger = logging.getLogger("GGSP")
@@ -83,6 +83,7 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
             epoch_number=args.epochs_autoencoder,
             device=device,
             checkpoint_path=args.vae_save_checkpoint_path,
+            kld_weight=args.vae_kld_weight,
         )
         vae_metrics.to_csv(args.vae_metrics_path, index=False)
 
@@ -90,6 +91,21 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
 
     logger.debug(f"Switching {autoencoder.__class__.__name__} model to eval mode")
     autoencoder.eval()
+
+    if args.graph_metric is not None:
+        graph_losses = torch.tensor([])
+        for data in tqdm(
+            val_loader,
+            desc="Computing graph metric on validation set",   
+        ):
+            data = data.to(device)
+            adj = autoencoder(data)
+            graph_losses = torch.cat(
+                (graph_losses, graph_norm_from_adj(adj.detach().cpu().numpy(), data.A.detach().cpu().numpy(), norm_type=args.graph_metric))
+            )
+        
+        # TODO : Remove the division by batch size, just to fit to kaggle results
+        logger.info(f"{args.graph_metric} loss on VAE: {graph_losses.mean().item() / args.batch_size}")
 
     # define beta schedule
     logger.debug(f"Using {args.noising_schedule_function} function as noising schedule")
@@ -135,25 +151,34 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
         denoise_metrics.to_csv(args.denoise_metrics_path, index=False)
 
     denoise_model.eval()
-    del train_loader
-
-    loss_val = []
-    for data in val_loader:
-        data = data.to(device)
-        samples = sample(
+    if args.graph_metric is not None and args.train_denoise:
+        graph_losses = torch.tensor([])
+        for data in tqdm(
+            val_loader,
+            desc="Computing graph metric on validation set",   
+        ):
+            data = data.to(device)
+            # Sample and denoise the data base on conditioning
+            samples = sample(
                 denoise_model,
                 data.stats,
                 latent_dim=args.latent_dim,
                 timesteps=args.timesteps,
                 betas=betas,
-                batch_size=data.stats.size(0)
+                batch_size=data.stats.size(0),
             )
-        x_sample = samples[-1]
-        adj = autoencoder.decode_mu(x_sample)
-        loss_val.append(absolute_loss_features(adj, data.A).sum().item())
+            # Take the last sample as the denoised sample and decode it
+            x_sample = samples[-1]
+            adj = autoencoder.decode_mu(x_sample)
+            graph_losses = torch.cat(
+                (graph_losses, graph_norm_from_adj(adj.detach().cpu().numpy(), data.A.detach().cpu().numpy(), norm_type=args.graph_metric))
+            )
 
-    logger.info(f"MAE on validation set: {round(np.sum(loss_val)/len(validset), 2)}")
-    del val_loader
+        # TODO : Remove the division by batch size, just to fit to kaggle results
+        logger.info(f"{args.graph_metric} loss on global pipeline: {graph_losses.mean().item() / args.batch_size}")
+
+
+    del train_loader, val_loader
 
     # Generate submission file on the test set
     if args.submission_file_path is not None:

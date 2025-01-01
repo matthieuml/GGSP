@@ -5,7 +5,7 @@ from .noising_schedule import (
     sigmoid_beta_schedule,
 )
 from .custom_layers import masked_layer_norm2D, masked_instance_norm2D
-from .graph_utils import construct_nx_from_adj
+from .graph_utils import construct_nx_from_adj, compute_graph_features
 from .utils import (
     load_model_checkpoint,
     extract,
