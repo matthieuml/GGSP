@@ -91,6 +91,14 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
 
     logger.debug(f"Switching {autoencoder.__class__.__name__} model to eval mode")
     autoencoder.eval()
+    loss_val = []
+    for data in val_loader:
+        data = data.to(device)
+        adj = autoencoder(data)
+        import pdb; pdb.set_trace()
+        loss_val.append(absolute_loss_features(adj, data.A).sum().item())
+
+    logger.info(f"MAE on validation set: {round(np.sum(loss_val)/len(validset), 2)}")
 
     if args.graph_metric is not None:
         graph_losses = torch.tensor([])
