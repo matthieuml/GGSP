@@ -98,7 +98,8 @@ def generate_submission(
 
     # TODO : the division by 256 is a temporary fix to fit kaggle scoring
     logger.info(
-        f"MAE of the graph features on the test set: {np.mean(graph_losses) / 256} with std: {np.std(graph_losses) / 256}"
+        f"Test MAE on graph features - "
+        f"Mean: {np.mean(graph_losses) / 256}, Std: {np.std(graph_losses) / 256}"
     )
     # Upload the file to the GGSP Drive
     if "user" not in args:
