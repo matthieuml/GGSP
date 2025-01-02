@@ -93,5 +93,5 @@ def generate_submission(
     # Upload the file to the GGSP Drive
     if "user" not in args:
         args.user = "Anonymous"
-    suffix_filename = "_" + file_path.split('/')[-2] + "_" + args.user
-    upload_file(file_path, suffix_filename=suffix_filename)
+    suffix_filename = "_" + args.user
+    upload_file(args.exp_path, suffix_filename=suffix_filename)
