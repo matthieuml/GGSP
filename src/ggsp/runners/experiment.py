@@ -71,7 +71,7 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
 
     # Train VGAE model
     if args.vae_load_checkpoint_path is not None:
-        load_model_checkpoint(autoencoder, vae_optimizer, args.vae_load_checkpoint_path)
+        load_model_checkpoint(autoencoder, vae_optimizer, args.vae_load_checkpoint_path, device)
 
     if args.train_autoencoder:
         vae_metrics = train_autoencoder(
@@ -132,7 +132,7 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
 
     if args.denoise_load_checkpoint_path is not None:
         load_model_checkpoint(
-            denoise_model, denoise_optimizer, args.denoise_load_checkpoint_path
+            denoise_model, denoise_optimizer, args.denoise_load_checkpoint_path, device
         )
 
     # Train denoising model
