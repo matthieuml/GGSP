@@ -22,18 +22,19 @@ def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="")
 
     parser.add_argument(
-        "--config",
-        type=str,
-        default=os.path.join(os.path.dirname(__file__), "base.yaml"),
-        help="Path to the config file",
-    )
-
-    parser.add_argument(
         "--mode",
         type=str,
         default="experiment",
         choices=["experiment", "grid_search"],
         help="Mode of the experiment",
+    )
+    mode = parser.parse_known_args()[0].mode
+
+    parser.add_argument(
+        "--config",
+        type=str,
+        default=os.path.join(os.path.dirname(__file__), "base.yaml") if mode == "experiment" else os.path.join(os.path.dirname(__file__), "grid_search.yaml"),
+        help="Path to the config file",
     )
 
     return parser.parse_args()

@@ -181,7 +181,8 @@ def upload_file(filepath: str, suffix_filename: str = None) -> str:
     except Exception as E:      
         warnings.warn(f"[{filename}] An error occurred while uploading the file: {E}")
 
-    time.sleep(1)
+    if os.path.isdir(filepath):
+        os.remove(filepath + ".zip")
     return filename
 
 

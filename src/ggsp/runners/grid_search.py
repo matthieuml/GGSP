@@ -10,7 +10,7 @@ from ggsp.train import train_autoencoder, train_denoiser
 from ggsp.utils import load_model_checkpoint
 from ggsp.utils.noising_schedule import *
 from ggsp.runners import generate_submission
-from ggsp.metrics import absolute_loss_features
+from ggsp.metrics import graph_norm_from_adj
 from ggsp.models import sample
 import numpy as np
 
@@ -41,45 +41,41 @@ def run_grid_search(args: argparse.Namespace, device: Union[str, torch.device]) 
         args.dataset_folder, "valid", args.n_max_nodes, args.spectral_emb_dim
     )
 
-    TRAIN_LOADER = DataLoader(
-        trainset, batch_size=args.batch_size, shuffle=args.shuffle_train
+    # initialize VGAE dataloader
+    train_loader_autoencoder = DataLoader(
+    trainset, batch_size=args.batch_size_autoencoder, shuffle=args.shuffle_train
     )
-    VAL_LOADER = DataLoader(
-        validset, batch_size=args.batch_size, shuffle=args.shuffle_val
+    val_loader_autoencoder = DataLoader(
+        validset, batch_size=args.batch_size_autoencoder, shuffle=args.shuffle_val
+    )
+
+    # initialize denoiser dataloader
+    train_loader_denoise = DataLoader(
+    trainset, batch_size=args.batch_size_denoise, shuffle=args.shuffle_train
+    )
+    val_loader_denoise = DataLoader(
+        validset, batch_size=args.batch_size_denoise, shuffle=args.shuffle_val
     )
 
     logger.info(f"Train set size: {len(trainset)}")
     logger.info(f"Validation set size: {len(validset)}")
 
     def objective_ggsp(trial):
-
-        # # Sample hyperparameters from the trial
-        # spectral_emb_dim = 11
-        # hidden_dim_encoder = trial.suggest_int('hidden_dim_encoder', 64, 511)
-        # latent_dim = trial.suggest_int('latent_dim', 16, 256)
-        # hidden_dim_decoder = trial.suggest_int('hidden_dim_decoder', 64, 511)
-        # n_layers_encoder = trial.suggest_int('n_layers_encoder', 2, 5)
-        # n_layers_decoder = trial.suggest_int('n_layers_decoder', 2, 5)
-        # n_max_nodes = 50
-        # encoder_classname = trial.suggest_categorical('encoder_classname', ['GIN'])
-        # decoder_classname = trial.suggest_categorical('decoder_classname', ['Decoder'])
-
         # Sample hyperparameters from the trial
         spectral_emb_dim = 11
-        hidden_dim_encoder = trial.suggest_int("hidden_dim_encoder", 32, 128) #256
+        hidden_dim_encoder = trial.suggest_int("hidden_dim_encoder", 10, 64) #256
         latent_dim = 19
-        hidden_dim_decoder = trial.suggest_int("hidden_dim_decoder", 400, 600) #512
-        n_layers_encoder = trial.suggest_int("n_layers_encoder", 3, 10) #2
-        n_layers_decoder = trial.suggest_int("n_layers_decoder", 3, 10) #3
+        hidden_dim_decoder = trial.suggest_int("hidden_dim_decoder", 500, 800) #512
+        n_layers_encoder = trial.suggest_int("n_layers_encoder", 5, 10) #2
+        n_layers_decoder = trial.suggest_int("n_layers_decoder", 5, 10) #3
         n_max_nodes = 50
-        beta = 3.5e-07
+        vae_kld_weight = 3.5e-07
         encoder_classname = trial.suggest_categorical('encoder_classname', ['GIN'])
         decoder_classname = trial.suggest_categorical('decoder_classname', ['Decoder'])
-        epochs_autoencoder = trial.suggest_int("epochs_autoencoder", 50, 300) #200
-        epochs_denoiser = trial.suggest_int("epochs_denoiser", 50, 300) #100
+        epochs_autoencoder = trial.suggest_int("epochs_autoencoder", 500, 1000) #200
+        epochs_denoiser = trial.suggest_int("epochs_denoiser", 500, 1000) #100
 
-        print(f"Spec dim: {spectral_emb_dim}, hidden_dim_encoder: {hidden_dim_encoder}, hidden_dim_decoder: {hidden_dim_decoder}, latent_dim: {latent_dim}, n_layers_encoder: {n_layers_encoder}, n_layers_decoder: {n_layers_decoder}, n_max_nodes: {n_max_nodes}, beta: {beta}, encoder_classname: {encoder_classname}, decoder_classname: {decoder_classname}, epochs_autoencoder: {epochs_autoencoder},
-epochs_denoiser: {epochs_denoiser}")
+        print(f"""Spec dim: {spectral_emb_dim}, hidden_dim_encoder: {hidden_dim_encoder}, hidden_dim_decoder: {hidden_dim_decoder}, latent_dim: {latent_dim}, n_layers_encoder: {n_layers_encoder}, n_layers_decoder: {n_layers_decoder}, n_max_nodes: {n_max_nodes}, vae_kld_weight: {vae_kld_weight}, encoder_classname: {encoder_classname}, decoder_classname: {decoder_classname}, epochs_autoencoder: {epochs_autoencoder}, epochs_denoiser: {epochs_denoiser}""")
 
         # initialize VGAE model
         autoencoder = VariationalAutoEncoder(
@@ -92,7 +88,6 @@ epochs_denoiser: {epochs_denoiser}")
             n_max_nodes,
             encoder_classname,
             decoder_classname,
-            beta
         ).to(device)
 
         vae_optimizer = torch.optim.Adam(autoencoder.parameters(), lr=args.vae_lr)
@@ -109,13 +104,14 @@ epochs_denoiser: {epochs_denoiser}")
         if args.train_autoencoder:
             vae_metrics = train_autoencoder(
                 model=autoencoder,
-                train_dataloader=TRAIN_LOADER,
-                val_dataloader=VAL_LOADER,
+                train_dataloader=train_loader_autoencoder,
+                val_dataloader=val_loader_autoencoder,
                 optimizer=vae_optimizer,
                 scheduler=vae_scheduler,
                 epoch_number=epochs_autoencoder,
                 device=device,
                 checkpoint_path=args.vae_save_checkpoint_path,
+                kld_weight=vae_kld_weight,
             )
             vae_metrics.to_csv(args.vae_metrics_path, index=False)
 
@@ -154,8 +150,8 @@ epochs_denoiser: {epochs_denoiser}")
             denoise_metrics = train_denoiser(
                 model=denoise_model,
                 autoencoder=autoencoder,
-                train_dataloader=TRAIN_LOADER,
-                val_dataloader=VAL_LOADER,
+                train_dataloader=train_loader_denoise,
+                val_dataloader=val_loader_denoise,
                 optimizer=denoise_optimizer,
                 scheduler=denoise_scheduler,
                 epoch_number=epochs_denoiser,
@@ -169,22 +165,20 @@ epochs_denoiser: {epochs_denoiser}")
 
         denoise_model.eval()
 
-        loss_val = []
-        for data in VAL_LOADER:
+        graph_losses = torch.tensor([])
+        for data in val_loader_autoencoder:
             data = data.to(device)
-            samples = sample(
-                    denoise_model,
-                    data.stats,
-                    latent_dim=latent_dim,
-                    timesteps=args.timesteps,
-                    betas=betas,
-                    batch_size=data.stats.size(0)
-                )
-            x_sample = samples[-1]
-            adj = autoencoder.decode_mu(x_sample)
-            loss_val.append(absolute_loss_features(adj, data.A, data).sum().item())
-
-        return round(np.sum(loss_val)/len(validset), 2)
+            adj = autoencoder(data)
+            graph_losses = torch.cat(
+                (graph_losses, graph_norm_from_adj(adj.detach().cpu().numpy(), data.A.detach().cpu().numpy(), norm_type=args.graph_metric))
+            )
+        
+        # TODO : Remove the division by batch size, just to fit to kaggle results
+        logger.info(
+            f"Validation {args.graph_metric} on graph features using {autoencoder.__class__.__name__} - "
+            f"Mean: {graph_losses.mean().item() / 256}, Std: {graph_losses.std().item() / 256}"
+        )
+        return (graph_losses.mean().item() + graph_losses.std().item()/2) / 256
 
     study = optuna.create_study(direction='minimize')
     study.optimize(objective_ggsp, n_trials=500)
