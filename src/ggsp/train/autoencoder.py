@@ -18,6 +18,7 @@ def train_autoencoder(
     optimizer: Optimizer,
     scheduler: _LRScheduler,
     epoch_number: int,
+    kld_weight: float = 0.05,
     checkpoint_path: str = None,
     device: Union[str, torch.device] = "cpu",
 ) -> pd.DataFrame:
@@ -30,6 +31,7 @@ def train_autoencoder(
         optimizer (Optimizer): learning rate optimizer
         scheduler (_LRScheduler): learning rate scheduler
         epoch_number (int): number of epochs
+        kld_weight (float, optional): weight of the KLD loss. Defaults to 0.05.
         checkpoint_path (str, optional): path to save the best model. Defaults to None.
         device (Union[str, torch.device], optional): device. Defaults to "cpu".
         verbose (bool, optional): If True, print epochs. Defaults to True.
@@ -64,7 +66,7 @@ def train_autoencoder(
         for data in train_dataloader:
             data = data.to(device)
             optimizer.zero_grad()
-            loss, recon, kld = model.loss_function(data)
+            loss, recon, kld = model.loss_function(data, beta=kld_weight)
             train_loss_all_recon += recon.item()
             train_loss_all_kld += kld.item()
             cnt_train += 1
@@ -83,7 +85,7 @@ def train_autoencoder(
 
         for data in val_dataloader:
             data = data.to(device)
-            loss, recon, kld = model.loss_function(data)
+            loss, recon, kld = model.loss_function(data, beta=kld_weight)
             val_loss_all_recon += recon.item()
             val_loss_all_kld += kld.item()
             val_loss_all += loss.item()
