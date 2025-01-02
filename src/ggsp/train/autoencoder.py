@@ -18,6 +18,7 @@ def train_autoencoder(
     optimizer: Optimizer,
     scheduler: _LRScheduler,
     epoch_number: int,
+    kld_weight: float = 0.05,
     checkpoint_path: str = None,
     device: Union[str, torch.device] = "cpu",
 ) -> pd.DataFrame:
@@ -30,6 +31,7 @@ def train_autoencoder(
         optimizer (Optimizer): learning rate optimizer
         scheduler (_LRScheduler): learning rate scheduler
         epoch_number (int): number of epochs
+        kld_weight (float, optional): weight of the KLD loss. Defaults to 0.05.
         checkpoint_path (str, optional): path to save the best model. Defaults to None.
         device (Union[str, torch.device], optional): device. Defaults to "cpu".
         verbose (bool, optional): If True, print epochs. Defaults to True.
@@ -52,6 +54,7 @@ def train_autoencoder(
     )
 
     best_val_loss = np.inf
+    previous_lr = scheduler.get_last_lr()
     for epoch in range(1, epoch_number + 1):
         logger.debug(f"Epoch: {epoch}, switching model to train mode")
         model.train()
@@ -64,7 +67,7 @@ def train_autoencoder(
         for data in train_dataloader:
             data = data.to(device)
             optimizer.zero_grad()
-            loss, recon, kld = model.loss_function(data)
+            loss, recon, kld = model.loss_function(data, beta=kld_weight)
             train_loss_all_recon += recon.item()
             train_loss_all_kld += kld.item()
             cnt_train += 1
@@ -83,7 +86,7 @@ def train_autoencoder(
 
         for data in val_dataloader:
             data = data.to(device)
-            loss, recon, kld = model.loss_function(data)
+            loss, recon, kld = model.loss_function(data, beta=kld_weight)
             val_loss_all_recon += recon.item()
             val_loss_all_kld += kld.item()
             val_loss_all += loss.item()
@@ -111,7 +114,7 @@ def train_autoencoder(
         ).reset_index(drop=True)
 
         logger.info(
-            "Epoch: {:04d}/{:04d}, Train Loss: {:.5f}, Train Reconstruction Loss: {:.2f}, Train KLD Loss: {:.2f}, Val Loss: {:.5f}, Val Reconstruction Loss: {:.2f}, Val KLD Loss: {:.2f}".format(
+            "Epoch: {:04d}/{:04d}, Train Loss: {:.5f}, Train Reconstruction Loss: {:.5f}, Train KLD Loss: {:.5f}, Val Loss: {:.5f}, Val Reconstruction Loss: {:.5f}, Val KLD Loss: {:.5f}".format(
                 df_metrics.iloc[-1]["epoch"],
                 epoch_number,
                 df_metrics.iloc[-1]["train_loss"],
@@ -124,6 +127,9 @@ def train_autoencoder(
         )
 
         scheduler.step()
+        if not np.allclose(scheduler.get_last_lr(), previous_lr, atol=0):
+            previous_lr = scheduler.get_last_lr()
+            logger.debug(f"Learning rate changed to {previous_lr}")
 
         if best_val_loss >= val_loss_all and checkpoint_path is not None:
             logger.debug(

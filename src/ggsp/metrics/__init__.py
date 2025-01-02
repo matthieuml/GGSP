@@ -1,2 +1,2 @@
 from .denoising_loss import p_losses
-from .mae import mae, absolute_loss_features, compute_features
+from .graph_metric import graph_norm, graph_norm_from_adj

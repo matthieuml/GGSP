@@ -13,7 +13,7 @@ logger = logging.getLogger("GGSP")
 
 
 def load_model_checkpoint(
-    model: torch.nn.Module, optimizer: Optimizer, checkpoint_path: str
+    model: torch.nn.Module, optimizer: Optimizer, checkpoint_path: str, device: torch.device
 ):
     """Load model checkpoint.
 
@@ -21,11 +21,12 @@ def load_model_checkpoint(
         model (torch.nn.Module): model to load
         optimizer (Optimizer): optimizer to load
         checkpoint_path (str): checkpoint path
+        device (torch.device): device to load the checkpoint
     """
     logger.debug(
         f"Loading checkpoint of model {model.__class__.__name__} from {checkpoint_path}"
     )
-    checkpoint = torch.load(checkpoint_path)
+    checkpoint = torch.load(checkpoint_path, weights_only=False, map_location=device)
     model.load_state_dict(checkpoint["state_dict"])
     optimizer.load_state_dict(checkpoint["optimizer"])
     logger.info(f"Loaded checkpoint from {checkpoint_path}")

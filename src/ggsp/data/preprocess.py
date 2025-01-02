@@ -23,7 +23,7 @@ def base_preprocess_dataset(dataset_folder, dataset, n_max_nodes, spectral_emb_d
         desc_file = os.path.join(dataset_folder, dataset, "test.txt")
 
         if os.path.isfile(filename):
-            data_lst = torch.load(filename)
+            data_lst = torch.load(filename, weights_only=False)
             logger.info(f"Dataset {filename} loaded from file")
 
         else:
@@ -47,7 +47,7 @@ def base_preprocess_dataset(dataset_folder, dataset, n_max_nodes, spectral_emb_d
         desc_path = os.path.join(dataset_folder, dataset, "description")
 
         if os.path.isfile(filename):
-            data_lst = torch.load(filename)
+            data_lst = torch.load(filename, weights_only=False)
             logger.info(f"Dataset {filename} loaded from file")
 
         else:
