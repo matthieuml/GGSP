@@ -1,10 +1,11 @@
 exp_path: ./run
 exp_name: experiment
+user: Anonymous # User used for submission to Google Drive (default: Anonymous)
 
 # =========== Dataset parameters ===========
 
 dataset_folder: ./data
-dataset_preprocessing_function: base_preprocess_dataset
+dataset_preprocessing_function: base_preprocess_dataset # Function to preprocess the dataset (default: base_preprocess_dataset)
 n_max_nodes: 50 # Possible maximum number of nodes in graphs (default: 50)
 spectral_emb_dim: 10 # Dimensionality of spectral embeddings for representing graph structures (default: 10)
 batch_size: 256 # Batch size for training, controlling the number of samples per gradient update (default: 256)
@@ -17,7 +18,7 @@ shuffle_test: False # Should be always False to fit submission format
 seed: 42 # Seed for random number generators, fixing the randomness in the application (default: 42)
 
 # VAE model parameters
-encoder_classname: GIN # Encoder class name for the VAE model (default: GGNN)
+encoder_classname: GIN # Encoder class name for the VAE model (default: GIN)
 decoder_classname: Decoder # Decoder class name for the VAE model (default: Decoder)
 hidden_dim_encoder: 64 # Hidden dimension size for encoder layers (default: 64)
 hidden_dim_decoder: 256 # Hidden dimension size for decoder layers (default: 256)
@@ -26,14 +27,14 @@ n_layers_encoder: 2 # Number of layers in the encoder network (default: 2)
 n_layers_decoder: 3 # Number of layers in the decoder network (default: 3)
 
 # VAE training parameters
-train_autoencoder: True # Whether to train the VAE model
-epochs_autoencoder: 200 # Number of training epochs for the autoencoder (default: 200)
+train_autoencoder: True # Whether to train the VAE model (default: True)
+epochs_autoencoder: 10 # Number of training epochs for the autoencoder (default: 200)
 vae_lr: 0.001 # Learning rate for the VAE optimizer, typically a small float value (default: 0.001)
 vae_scheduler_step_size: 500 # Period of learning rate decay for the VAE optimizer (default: 500)
 vae_scheduler_gamma: 0.1 # Multiplicative factor of learning rate decay for the VAE optimizer (default: 0.1)
 vae_kld_weight: 0.05 # Weight of the KLD loss in the VAE loss function (default: 0.05)
-vae_load_checkpoint_path: null # Path to a checkpoint to load the model from (can restart training from)
-vae_save_checkpoint: True
+vae_load_checkpoint_path: null # Path to a checkpoint to load the model from and restart training
+vae_save_checkpoint: True # Whether to save the denoising model checkpoint (default: True)
 
 # Diffusion parameters
 timesteps: 500 # Number of timesteps for the diffusion (default: 500)
@@ -43,23 +44,24 @@ n_condition: 7 # Number of distinct condition properties used in conditional vec
 dim_condition: 128 # Dimensionality of conditioning vectors for conditional generation (default: 128)
 
 # Diffusion training parameters
-train_denoise: True # Whether to train the diffusion model
-epochs_denoise: 100 # Number of training epochs for the denoising model (default: 100)
+train_denoise: True # Whether to train the diffusion model (default: True)
+epochs_denoise: 10 # Number of training epochs for the denoising model (default: 100)
 noising_schedule_function: linear_beta_schedule # Function to schedule the noise level during training (default: linear_beta_schedule)
 denoise_loss_type: huber # Loss function type for the denoising model (default: huber)
 denoise_lr: 0.001 # Learning rate for the denoising model optimizer, typically a small float value (default: 0.001)
 denoise_scheduler_step_size: 500 # Period of learning rate decay for the denoising model optimizer (default: 500)
 vae_scheduler_gamma: 0.1 # Multiplicative factor of learning rate decay for the denoising model optimizer (default: 0.1)
-denoise_load_checkpoint_path: null # Path to a checkpoint to load the model from (can restart training from)
-denoise_save_checkpoint: True
+denoise_load_checkpoint_path: null # Path to a checkpoint to load the model from and restart training
+denoise_save_checkpoint: True # Whether to save the denoising model checkpoint (default: True)
 
 
 # =========== Evaluation ===========
-submission_file: True
+submission_file: True # Whether to generate a submission file computing the MAE in the process (default: True)
+upload_submission_file: False # Whether to upload the submission file to Google Drive when generated (default: False)
 graph_metric: MAE # Metric used to compute the distance between graphs can be None for no computing (default: MAE)
 
 
 # =========== Logging ===========
-verbose: True # Whether to print additional information during training and evaluation
-save_logs: True # Whether to save logs during training and evaluation
+verbose: True # Whether to print additional information during training and evaluation (default: True)
+save_logs: True # Whether to save logs during training and evaluation (default: True)
 log_level: INFO # Logging level for the application (default: INFO)
