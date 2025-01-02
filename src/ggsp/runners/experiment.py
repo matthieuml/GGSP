@@ -71,7 +71,7 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
 
     # Train VGAE model
     if args.vae_load_checkpoint_path is not None:
-        load_model_checkpoint(autoencoder, vae_optimizer, args.vae_load_checkpoint_path)
+        load_model_checkpoint(autoencoder, vae_optimizer, args.vae_load_checkpoint_path, device)
 
     if args.train_autoencoder:
         vae_metrics = train_autoencoder(
@@ -105,7 +105,7 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
             )
         
         # TODO : Remove the division by batch size, just to fit to kaggle results
-        logger.info(f"{args.graph_metric} loss on VAE: {graph_losses.mean().item() / args.batch_size}")
+        logger.info(f"{args.graph_metric} loss on VAE: {graph_losses.mean().item() / 256} with std: {graph_losses.std().item() / 256}")
 
     # define beta schedule
     logger.debug(f"Using {args.noising_schedule_function} function as noising schedule")
@@ -129,7 +129,7 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
 
     if args.denoise_load_checkpoint_path is not None:
         load_model_checkpoint(
-            denoise_model, denoise_optimizer, args.denoise_load_checkpoint_path
+            denoise_model, denoise_optimizer, args.denoise_load_checkpoint_path, device
         )
 
     # Train denoising model
@@ -151,7 +151,7 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
         denoise_metrics.to_csv(args.denoise_metrics_path, index=False)
 
     denoise_model.eval()
-    if args.graph_metric is not None and args.train_denoise:
+    if args.graph_metric is not None:
         graph_losses = torch.tensor([])
         for data in tqdm(
             val_loader,
@@ -175,7 +175,7 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
             )
 
         # TODO : Remove the division by batch size, just to fit to kaggle results
-        logger.info(f"{args.graph_metric} loss on global pipeline: {graph_losses.mean().item() / args.batch_size}")
+        logger.info(f"{args.graph_metric} loss on global pipeline: {graph_losses.mean().item() / 256} with std: {graph_losses.std().item() / 256}")
 
 
     del train_loader, val_loader
