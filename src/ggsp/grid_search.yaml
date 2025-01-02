@@ -1,5 +1,5 @@
 exp_path: ./run
-exp_name: experiment
+exp_name: grid_search
 user: Anonymous # User used for submission to Google Drive (default: Anonymous)
 
 # =========== Dataset parameters ===========
