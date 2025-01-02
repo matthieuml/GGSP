@@ -54,6 +54,7 @@ def train_autoencoder(
     )
 
     best_val_loss = np.inf
+    previous_lr = scheduler.get_last_lr()
     for epoch in range(1, epoch_number + 1):
         logger.debug(f"Epoch: {epoch}, switching model to train mode")
         model.train()
@@ -113,7 +114,7 @@ def train_autoencoder(
         ).reset_index(drop=True)
 
         logger.info(
-            "Epoch: {:04d}/{:04d}, Train Loss: {:.5f}, Train Reconstruction Loss: {:.2f}, Train KLD Loss: {:.2f}, Val Loss: {:.5f}, Val Reconstruction Loss: {:.2f}, Val KLD Loss: {:.2f}".format(
+            "Epoch: {:04d}/{:04d}, Train Loss: {:.5f}, Train Reconstruction Loss: {:.5f}, Train KLD Loss: {:.5f}, Val Loss: {:.5f}, Val Reconstruction Loss: {:.5f}, Val KLD Loss: {:.5f}".format(
                 df_metrics.iloc[-1]["epoch"],
                 epoch_number,
                 df_metrics.iloc[-1]["train_loss"],
@@ -126,6 +127,9 @@ def train_autoencoder(
         )
 
         scheduler.step()
+        if not np.allclose(scheduler.get_last_lr(), previous_lr, atol=0):
+            previous_lr = scheduler.get_last_lr()
+            logger.debug(f"Learning rate changed to {previous_lr}")
 
         if best_val_loss >= val_loss_all and checkpoint_path is not None:
             logger.debug(

@@ -4,6 +4,7 @@ import csv
 import torch
 import argparse
 import logging
+import numpy as np
 from tqdm import tqdm
 from typing import Union
 from torch.utils.data import DataLoader
@@ -13,7 +14,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'drive'))
 from gdrive import upload_file  # noqa: E402
 
 from ggsp.models import sample  # noqa: E402
-from ggsp.utils import construct_nx_from_adj  # noqa: E402
+from ggsp.utils import construct_nx_from_adj, compute_graph_features  # noqa: E402
 
 logger = logging.getLogger("GGSP")
 
@@ -47,6 +48,7 @@ def generate_submission(
         writer = csv.writer(csvfile)
         # Write the header
         writer.writerow(["graph_id", "edge_list"])
+        graph_losses = []
         for k, data in enumerate(
             tqdm(
                 test_loader,
@@ -79,6 +81,10 @@ def generate_submission(
                     adj[i, :, :].detach().cpu().numpy()
                 )
                 stat_x = stat_x.detach().cpu().numpy()
+                stat_predicted = compute_graph_features(Gs_generated).detach().cpu().numpy()
+                graph_losses.append(
+                    np.mean(np.abs(stat_x - stat_predicted))
+                )
 
                 # Define a graph ID
                 graph_id = graph_ids[i]
@@ -90,6 +96,11 @@ def generate_submission(
                 # Write the graph ID and the full edge list as a single row
                 writer.writerow([graph_id, edge_list_text])
 
+    # TODO : the division by 256 is a temporary fix to fit kaggle scoring
+    logger.info(
+        f"Test MAE on graph features - "
+        f"Mean: {np.mean(graph_losses) / 256}, Std: {np.std(graph_losses) / 256}"
+    )
     # Upload the file to the GGSP Drive
     if args.upload_submission_file:
         if "user" not in args:
