@@ -91,7 +91,8 @@ def generate_submission(
                 writer.writerow([graph_id, edge_list_text])
 
     # Upload the file to the GGSP Drive
-    if "user" not in args:
-        args.user = "Anonymous"
-    suffix_filename = "_" + args.user
-    upload_file(args.exp_path, suffix_filename=suffix_filename)
+    if args.upload_submission_file:
+        if "user" not in args:
+            args.user = "Anonymous"
+        suffix_filename = "_" + args.user
+        upload_file(args.exp_path, suffix_filename=suffix_filename)
