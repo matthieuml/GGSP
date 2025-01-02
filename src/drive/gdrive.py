@@ -7,7 +7,7 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
 import time
 import warnings
-
+from zipfile import ZipFile
 
 import pandas as pd
 
@@ -133,6 +133,57 @@ def upload_file(filepath: str, suffix_filename: str = None) -> str:
 
     time.sleep(10)
     return filename
+
+
+def upload_file(filepath: str, suffix_filename: str = None) -> str:
+    """
+    Upload the file from local folder to the GGSP Drive folder
+
+    Args:
+        filename (str): The filename of the file you want to upload
+    """
+    # Extract the filename and the file id if it exists
+    if os.path.isdir(filepath):
+        # zip folder
+        zip_path = filepath + ".zip"
+        with ZipFile(zip_path, 'w') as zipf:
+            # Walk through the folder
+            for root, dirs, files in os.walk(filepath):
+                for file in files:
+                    # Create the complete filepath of the file in the ZIP archive
+                    file_path = os.path.join(root, file)
+                    # Add the file to the ZIP archive with a relative path
+                    zipf.write(file_path, arcname=os.path.basename(file_path))
+        filepath = zip_path
+        filename = os.path.basename(filepath)
+        if suffix_filename is not None:
+            filename = filename.replace(".zip", "") + suffix_filename + ".zip"
+    else:
+        filename = os.path.basename(filepath)
+        if suffix_filename is not None:
+            filename = filename.replace(".csv", "") + suffix_filename + ".csv"
+    file_id = get_file_id(filename)
+
+    # Convert the file to a media object (that can be forwarded)
+    print(f"[{filename}] Uploading the file to GGSP Drive")
+    media = MediaFileUpload(filepath, mimetype="application/octet-stream", resumable=True)
+
+    try:
+        if file_id is not None:
+            # Update the file
+            SERVICE.files().update(fileId=file_id, media_body=media).execute()
+            print(f"[{filename}] File updated successfully.")
+        else:
+            # Create the file
+            file_metadata = {"name": filename, "parents": [PARENTS_FOLDER_ID]}
+            SERVICE.files().create(body=file_metadata, media_body=media).execute()
+            print(f"[{filename}] File uploaded successfully.")
+    except Exception as E:      
+        warnings.warn(f"[{filename}] An error occurred while uploading the file: {E}")
+
+    time.sleep(1)
+    return filename
+
 
 
 def download_file(filename: str, save=True) -> str:

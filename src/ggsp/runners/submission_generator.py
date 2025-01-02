@@ -102,7 +102,8 @@ def generate_submission(
         f"Mean: {np.mean(graph_losses) / 256}, Std: {np.std(graph_losses) / 256}"
     )
     # Upload the file to the GGSP Drive
-    if "user" not in args:
-        args.user = "Anonymous"
-    suffix_filename = "_" + file_path.split('/')[-2] + "_" + args.user
-    upload_file(file_path, suffix_filename=suffix_filename)
+    if args.upload_submission_file:
+        if "user" not in args:
+            args.user = "Anonymous"
+        suffix_filename = "_" + args.user
+        upload_file(args.exp_path, suffix_filename=suffix_filename)
