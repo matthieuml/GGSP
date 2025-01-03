@@ -88,6 +88,7 @@ def run_grid_search(args: argparse.Namespace, device: Union[str, torch.device]) 
             n_max_nodes,
             encoder_classname,
             decoder_classname,
+            args.get('vae_kld_weight', False),
         ).to(device)
 
         vae_optimizer = torch.optim.Adam(autoencoder.parameters(), lr=args.vae_lr)
@@ -112,6 +113,7 @@ def run_grid_search(args: argparse.Namespace, device: Union[str, torch.device]) 
                 device=device,
                 checkpoint_path=args.vae_save_checkpoint_path,
                 kld_weight=vae_kld_weight,
+                is_kld_weight_adaptative=args.is_kld_weight_adaptative,
             )
             vae_metrics.to_csv(args.vae_metrics_path, index=False)
 

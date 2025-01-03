@@ -36,14 +36,22 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
         args.dataset_folder, "test", args.n_max_nodes, args.spectral_emb_dim
     )
 
-    train_loader = DataLoader(
-        trainset, batch_size=args.batch_size, shuffle=args.shuffle_train
+    train_loader_autoencoder = DataLoader(
+        trainset, batch_size=args.batch_size_autoencoder, shuffle=args.shuffle_train
     )
-    val_loader = DataLoader(
-        validset, batch_size=args.batch_size, shuffle=args.shuffle_val
+    val_loader_autoencoder = DataLoader(
+        validset, batch_size=args.batch_size_autoencoder, shuffle=args.shuffle_val
     )
+
+    train_loader_denoise = DataLoader(
+        trainset, batch_size=args.batch_size_denoise, shuffle=args.shuffle_train
+    )
+    val_loader_denoise = DataLoader(
+        validset, batch_size=args.batch_size_denoise, shuffle=args.shuffle_val
+    )
+
     test_loader = DataLoader(
-        testset, batch_size=args.batch_size, shuffle=args.shuffle_test
+        testset, batch_size=max(args.batch_size_autoencoder, args.batch_size_denoise), shuffle=args.shuffle_test
     )
 
     logger.info(f"Train set size: {len(trainset)}")
@@ -61,6 +69,7 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
         args.n_max_nodes,
         args.encoder_classname,
         args.decoder_classname,
+        args.vae_kld_weight,
     ).to(device)
 
     vae_optimizer = torch.optim.Adam(autoencoder.parameters(), lr=args.vae_lr)
@@ -77,14 +86,15 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
     if args.train_autoencoder:
         vae_metrics = train_autoencoder(
             model=autoencoder,
-            train_dataloader=train_loader,
-            val_dataloader=val_loader,
+            train_dataloader=train_loader_autoencoder,
+            val_dataloader=val_loader_autoencoder,
             optimizer=vae_optimizer,
             scheduler=vae_scheduler,
             epoch_number=args.epochs_autoencoder,
             device=device,
             checkpoint_path=args.vae_save_checkpoint_path,
             kld_weight=args.vae_kld_weight,
+            is_kld_weight_adaptative=args.is_kld_weight_adaptative,
         )
         vae_metrics.to_csv(args.vae_metrics_path, index=False)
 
@@ -96,7 +106,7 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
     if args.graph_metric is not None:
         graph_losses = torch.tensor([])
         for data in tqdm(
-            val_loader,
+            val_loader_autoencoder,
             desc="Computing graph metric on validation set",   
         ):
             data = data.to(device)
@@ -141,8 +151,8 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
         denoise_metrics = train_denoiser(
             model=denoise_model,
             autoencoder=autoencoder,
-            train_dataloader=train_loader,
-            val_dataloader=val_loader,
+            train_dataloader=train_loader_denoise,
+            val_dataloader=val_loader_denoise,
             optimizer=denoise_optimizer,
             scheduler=denoise_scheduler,
             epoch_number=args.epochs_denoise,

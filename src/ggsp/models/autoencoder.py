@@ -18,6 +18,7 @@ class VariationalAutoEncoder(nn.Module):
         n_max_nodes,
         encoder_class_name="GIN",
         decoder_class_name="Decoder",
+        kld_weight=0.05,
     ):
         super(VariationalAutoEncoder, self).__init__()
         self.n_max_nodes = n_max_nodes
@@ -30,6 +31,7 @@ class VariationalAutoEncoder(nn.Module):
         self.decoder = globals()[decoder_class_name](
             latent_dim, hidden_dim_dec, n_layers_dec, n_max_nodes
         )
+        self.beta = kld_weight
 
     def forward(self, data):
         x_g = self.encoder(data)
@@ -62,8 +64,11 @@ class VariationalAutoEncoder(nn.Module):
     def decode_mu(self, mu):
         adj = self.decoder(mu)
         return adj
+    
+    def beta_step(self):
+        self.beta /= 2
 
-    def loss_function(self, data, beta=0.05):
+    def loss_function(self, data):
         x_g = self.encoder(data)
         mu = self.fc_mu(x_g)
         logvar = self.fc_logvar(x_g)
@@ -72,6 +77,6 @@ class VariationalAutoEncoder(nn.Module):
 
         recon = F.l1_loss(adj, data.A, reduction="mean")
         kld = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
-        loss = recon + beta * kld
+        loss = recon + self.beta * kld
 
         return loss, recon, kld

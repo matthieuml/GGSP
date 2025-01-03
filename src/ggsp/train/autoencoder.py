@@ -21,6 +21,7 @@ def train_autoencoder(
     kld_weight: float = 0.05,
     checkpoint_path: str = None,
     device: Union[str, torch.device] = "cpu",
+    is_kld_weight_adaptative: bool = False,
 ) -> pd.DataFrame:
     """Train autoencoder model.
 
@@ -67,7 +68,7 @@ def train_autoencoder(
         for data in train_dataloader:
             data = data.to(device)
             optimizer.zero_grad()
-            loss, recon, kld = model.loss_function(data, beta=kld_weight)
+            loss, recon, kld = model.loss_function(data)
             train_loss_all_recon += recon.item()
             train_loss_all_kld += kld.item()
             cnt_train += 1
@@ -86,7 +87,7 @@ def train_autoencoder(
 
         for data in val_dataloader:
             data = data.to(device)
-            loss, recon, kld = model.loss_function(data, beta=kld_weight)
+            loss, recon, kld = model.loss_function(data)
             val_loss_all_recon += recon.item()
             val_loss_all_kld += kld.item()
             val_loss_all += loss.item()
@@ -143,5 +144,8 @@ def train_autoencoder(
                 },
                 checkpoint_path,
             )
+        
+        if epoch % 100 == 0 and is_kld_weight_adaptative:
+            model.beta_step()
 
     return df_metrics
