@@ -71,7 +71,7 @@ class GCN(torch.nn.Module):
 
         for conv in self.convs:
             x = conv(x, edge_index)
-            x = F.relu(x)
+            x = F.elu(x)
             x = F.dropout(x, self.dropout, training=self.training)
 
         out = global_add_pool(x, data.batch)
@@ -82,17 +82,26 @@ class GCN(torch.nn.Module):
 class GAT(nn.Module):
     def __init__(self, input_dim, hidden_dim, latent_dim, n_layers, dropout=0.2):
         super().__init__()
+        self.dropout = dropout
+
         self.convs = nn.ModuleList()
         self.convs.append(GATConv(input_dim, hidden_dim, heads=4, concat=True))
         for _ in range(n_layers - 1):
             self.convs.append(GATConv(hidden_dim * 4, hidden_dim, heads=4, concat=True))
+
+        self.bn = nn.BatchNorm1d(hidden_dim * 4)
         self.fc = nn.Linear(hidden_dim * 4, latent_dim)
-        self.dropout = dropout
 
     def forward(self, data):
-        x, edge_index = data.x, data.edge_index
+        edge_index = data.edge_index
+        x = data.x
+
         for conv in self.convs:
-            x = F.elu(conv(x, edge_index))
+            x = conv(x, edge_index)
+            x = F.elu(x)
             x = F.dropout(x, p=self.dropout, training=self.training)
+
         out = global_add_pool(x, data.batch)
-        return self.fc(out)
+        out = self.bn(out)
+        out = self.fc(out)
+        return out
