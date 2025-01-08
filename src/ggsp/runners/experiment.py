@@ -12,7 +12,6 @@ from ggsp.utils.noising_schedule import *
 from ggsp.runners import generate_submission
 from ggsp.metrics import graph_norm_from_adj
 from ggsp.models import sample
-import numpy as np
 
 logger = logging.getLogger("GGSP")
 
@@ -121,6 +120,8 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
             f"Mean: {graph_losses.mean().item() / 256}, Std: {graph_losses.std().item() / 256}"
         )
 
+    del train_loader_autoencoder, val_loader_autoencoder
+
     # Define beta schedule
     logger.debug(f"Using {args.noising_schedule_function} function as noising schedule")
     betas = globals()[args.noising_schedule_function](timesteps=args.timesteps)
@@ -172,7 +173,7 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
     if args.graph_metric is not None:
         graph_losses = torch.tensor([])
         for data in tqdm(
-            val_loader,
+            val_loader_denoise,
             desc="Computing graph metric on validation set",   
         ):
             data = data.to(device)
@@ -199,7 +200,7 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
         )
 
 
-    del train_loader, val_loader
+    del train_loader_denoise, val_loader_denoise
 
     # Generate submission file on the test set
     if args.submission_file_path is not None:

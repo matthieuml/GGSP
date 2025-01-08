@@ -9,10 +9,7 @@ from ggsp.models import VariationalAutoEncoder, DenoiseNN
 from ggsp.train import train_autoencoder, train_denoiser
 from ggsp.utils import load_model_checkpoint
 from ggsp.utils.noising_schedule import *
-from ggsp.runners import generate_submission
 from ggsp.metrics import graph_norm_from_adj
-from ggsp.models import sample
-import numpy as np
 
 import optuna
 
@@ -20,9 +17,6 @@ import warnings
 warnings.filterwarnings("ignore")
 
 logger = logging.getLogger("GGSP")
-
-EPOCHS_AUTOENCODER = 200
-EPOCHS_DENOISER = 100
 
 
 def run_grid_search(args: argparse.Namespace, device: Union[str, torch.device]) -> None:
@@ -88,7 +82,7 @@ def run_grid_search(args: argparse.Namespace, device: Union[str, torch.device]) 
             n_max_nodes,
             encoder_classname,
             decoder_classname,
-            args.get('vae_kld_weight', False),
+            vae_kld_weight,
         ).to(device)
 
         vae_optimizer = torch.optim.Adam(autoencoder.parameters(), lr=args.vae_lr)
