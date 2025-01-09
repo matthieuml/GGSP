@@ -94,7 +94,7 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
             checkpoint_path=args.vae_save_checkpoint_path,
             kld_weight=args.vae_kld_weight,
             is_kld_weight_adaptative=args.is_kld_weight_adaptative,
-            contractive_loss_k=args.contractive_loss_k,
+            contrastive_loss_k=args.contrastive_loss_k,
         )
         vae_metrics.to_csv(args.vae_metrics_path, index=False)
 

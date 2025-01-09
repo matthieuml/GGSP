@@ -22,7 +22,7 @@ def train_autoencoder(
     checkpoint_path: str = None,
     device: Union[str, torch.device] = "cpu",
     is_kld_weight_adaptative: bool = False,
-    contractive_loss_k: int = None,
+    contrastive_loss_k: int = None,
 ) -> pd.DataFrame:
     """Train autoencoder model.
 
@@ -93,7 +93,7 @@ def train_autoencoder(
 
         for data in val_dataloader:
             data = data.to(device)
-            loss, recon, kld, contrastive_loss = model.loss_function(data, k=contractive_loss_k)
+            loss, recon, kld, contrastive_loss = model.loss_function(data, k=contrastive_loss_k)
             val_loss_all_recon += recon.item()
             val_loss_all_kld += kld.item()
             val_loss_all_contrastive += contrastive_loss.item()
