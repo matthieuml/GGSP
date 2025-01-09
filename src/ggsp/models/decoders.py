@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 
 class Decoder(nn.Module):
-    def __init__(self, latent_dim, hidden_dim, n_layers, n_nodes):
+    def __init__(self, latent_dim, hidden_dim, n_layers, n_nodes, dropout=0.2):
         super(Decoder, self).__init__()
         self.n_layers = n_layers
         self.n_nodes = n_nodes
@@ -17,10 +17,12 @@ class Decoder(nn.Module):
         self.mlp = nn.ModuleList(mlp_layers)
         self.relu = nn.ReLU()
         self.sigmoid = nn.Sigmoid()
+        self.dropout = dropout
 
     def forward(self, x):
         for i in range(self.n_layers - 1):
             x = self.relu(self.mlp[i](x))
+            x = F.dropout(x, self.dropout, training=self.training)
 
         x = self.mlp[self.n_layers - 1](x)
         x = torch.reshape(x, (x.size(0), -1, 2))

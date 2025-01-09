@@ -22,6 +22,7 @@ def train_autoencoder(
     checkpoint_path: str = None,
     device: Union[str, torch.device] = "cpu",
     is_kld_weight_adaptative: bool = False,
+    contractive_loss_k: int = None,
 ) -> pd.DataFrame:
     """Train autoencoder model.
 
@@ -48,9 +49,11 @@ def train_autoencoder(
             "train_loss",
             "train_reconstruction_loss",
             "train_kld_loss",
+            "train_contrastive_loss",
             "val_loss",
             "val_reconstruction_loss",
             "val_kld_loss",
+            "val_contrastive_loss",
         ]
     )
 
@@ -63,14 +66,16 @@ def train_autoencoder(
         train_count = 0
         train_loss_all_recon = 0
         train_loss_all_kld = 0
+        train_loss_all_contrastive = 0
         cnt_train = 0
 
         for data in train_dataloader:
             data = data.to(device)
             optimizer.zero_grad()
-            loss, recon, kld = model.loss_function(data)
+            loss, recon, kld, contrastive_loss = model.loss_function(data)
             train_loss_all_recon += recon.item()
             train_loss_all_kld += kld.item()
+            train_loss_all_contrastive += contrastive_loss.item()
             cnt_train += 1
             loss.backward()
             train_loss_all += loss.item()
@@ -84,12 +89,14 @@ def train_autoencoder(
         cnt_val = 0
         val_loss_all_recon = 0
         val_loss_all_kld = 0
+        val_loss_all_contrastive = 0
 
         for data in val_dataloader:
             data = data.to(device)
-            loss, recon, kld = model.loss_function(data)
+            loss, recon, kld, contrastive_loss = model.loss_function(data, k=contractive_loss_k)
             val_loss_all_recon += recon.item()
             val_loss_all_kld += kld.item()
+            val_loss_all_contrastive += contrastive_loss.item()
             val_loss_all += loss.item()
             cnt_val += 1
             val_count += torch.max(data.batch) + 1
@@ -104,9 +111,11 @@ def train_autoencoder(
                         "train_loss": train_loss_all / cnt_train,
                         "train_reconstruction_loss": train_loss_all_recon / cnt_train,
                         "train_kld_loss": train_loss_all_kld / cnt_train,
+                        "train_contrastive_loss": train_loss_all_contrastive / cnt_train,
                         "val_loss": val_loss_all / cnt_val,
                         "val_reconstruction_loss": val_loss_all_recon / cnt_val,
                         "val_kld_loss": val_loss_all_kld / cnt_val,
+                        "val_contrastive_loss": val_loss_all_contrastive / cnt_val,
                     },
                     index=[0],
                 ),
@@ -115,15 +124,17 @@ def train_autoencoder(
         ).reset_index(drop=True)
 
         logger.info(
-            "Epoch: {:04d}/{:04d}, Train Loss: {:.5f}, Train Reconstruction Loss: {:.5f}, Train KLD Loss: {:.5f}, Val Loss: {:.5f}, Val Reconstruction Loss: {:.5f}, Val KLD Loss: {:.5f}".format(
+            "Epoch: {:04d}/{:04d}, Train Loss: {:.5f}, Train Reconstruction Loss: {:.5f}, Train KLD Loss: {:.5f}, Train Contrastive Loss: {:.5f} Val Loss: {:.5f}, Val Reconstruction Loss: {:.5f}, Val KLD Loss: {:.5f}, Val Contrastive Loss: {:.5f}".format(
                 df_metrics.iloc[-1]["epoch"],
                 epoch_number,
                 df_metrics.iloc[-1]["train_loss"],
                 df_metrics.iloc[-1]["train_reconstruction_loss"],
                 df_metrics.iloc[-1]["train_kld_loss"],
+                df_metrics.iloc[-1]["train_contrastive_loss"],
                 df_metrics.iloc[-1]["val_loss"],
                 df_metrics.iloc[-1]["val_reconstruction_loss"],
                 df_metrics.iloc[-1]["val_kld_loss"],
+                df_metrics.iloc[-1]["val_contrastive_loss"],
             )
         )
 
@@ -145,7 +156,7 @@ def train_autoencoder(
                 checkpoint_path,
             )
         
-        if epoch % 100 == 0 and is_kld_weight_adaptative:
+        if epoch % 10 == 0 and is_kld_weight_adaptative:
             model.beta_step()
 
     return df_metrics

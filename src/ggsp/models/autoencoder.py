@@ -66,9 +66,10 @@ class VariationalAutoEncoder(nn.Module):
         return adj
     
     def beta_step(self):
-        self.beta /= 2
+        self.beta *= (1 + 0.075)
+        print(f"New beta: {self.beta}") 
 
-    def loss_function(self, data):
+    def loss_function(self, data, k=2):
         x_g = self.encoder(data)
         mu = self.fc_mu(x_g)
         logvar = self.fc_logvar(x_g)
@@ -77,6 +78,36 @@ class VariationalAutoEncoder(nn.Module):
 
         recon = F.l1_loss(adj, data.A, reduction="mean")
         kld = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+
         loss = recon + self.beta * kld
 
-        return loss, recon, kld
+        # contrastive loss
+        if k is not None:
+            temperature = 0.07
+            # Find the nearest neighbors
+            n = data.stats.shape[0]
+            distance = ((data.stats[None, :] - data.stats[:, None])**2).sum(axis=-1)
+            _, neighbors_indices = torch.topk(distance, k, largest=False)
+
+            # Create the mask
+            mask = torch.zeros((n, n), dtype=torch.bool)
+            row_indices = torch.arange(n).unsqueeze(1).expand_as(neighbors_indices)
+            mask[row_indices, neighbors_indices] = True
+
+            # Compute the cosine similarity
+            x_g_normalized = F.normalize(x_g, dim=1)
+            cosine_similarity = x_g_normalized @ x_g_normalized.T
+            positive_similarity = mask * cosine_similarity
+
+            # Compute the logits
+            numerator = torch.exp(positive_similarity / temperature)
+            denominator = torch.exp(cosine_similarity / temperature).sum(dim=-1, keepdim=True)
+
+            # Compute the contrastive loss
+            contrastive_loss = -torch.log(numerator / denominator).mean()
+            loss += 1.0e-02 * contrastive_loss
+        
+        else:
+            contrastive_loss = torch.Tensor([0])
+
+        return loss, recon, kld, contrastive_loss
