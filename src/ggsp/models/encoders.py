@@ -53,7 +53,7 @@ class GIN(torch.nn.Module):
         return out
 
 class GCN(torch.nn.Module):
-    def __init__(self, input_dim, hidden_dim, latent_dim, n_layers, dropout=0.4):
+    def __init__(self, input_dim, hidden_dim, latent_dim, n_layers, dropout=0.2):
         super().__init__()
         self.dropout = dropout
 

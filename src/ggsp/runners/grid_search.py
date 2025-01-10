@@ -168,12 +168,15 @@ def run_grid_search(args: argparse.Namespace, device: Union[str, torch.device]) 
             graph_losses = torch.cat(
                 (graph_losses, graph_norm_from_adj(adj.detach().cpu().numpy(), data.A.detach().cpu().numpy(), norm_type=args.graph_metric))
             )
-        
+
         # TODO : Remove the division by batch size, just to fit to kaggle results
         logger.info(
             f"Validation {args.graph_metric} on graph features using {autoencoder.__class__.__name__} - "
             f"Mean: {graph_losses.mean().item() / 256}, Std: {graph_losses.std().item() / 256}"
         )
+
+        del autoencoder, denoise_model
+
         return (graph_losses.mean().item() + graph_losses.std().item()/2) / 256
 
     study = optuna.create_study(direction='minimize')
