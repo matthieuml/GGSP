@@ -82,7 +82,7 @@ class VariationalAutoEncoder(nn.Module):
         loss = recon + self.beta * kld
 
         # contrastive loss
-        if k >= 0:
+        if k > 0:
             temperature = 0.07
             # Find the nearest neighbors
             n = data.stats.shape[0]
@@ -90,7 +90,7 @@ class VariationalAutoEncoder(nn.Module):
             _, neighbors_indices = torch.topk(distance, k, largest=False)
 
             # Create the mask
-            mask = torch.zeros((n, n), dtype=torch.bool)
+            mask = torch.zeros((n, n), dtype=torch.bool, device=data.stats.device)
             row_indices = torch.arange(n).unsqueeze(1).expand_as(neighbors_indices)
             mask[row_indices, neighbors_indices] = True
             mask.fill_diagonal_(False)
@@ -106,7 +106,7 @@ class VariationalAutoEncoder(nn.Module):
 
             # Compute the contrastive loss
             contrastive_loss = -(mask * torch.log(numerator / denominator)).mean()
-            loss += contrastive_loss
+            loss += 1.0e-03 * contrastive_loss
         
         else:
             contrastive_loss = torch.Tensor([0])
