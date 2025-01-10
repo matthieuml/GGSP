@@ -72,7 +72,7 @@ def train_autoencoder(
         for data in train_dataloader:
             data = data.to(device)
             optimizer.zero_grad()
-            loss, recon, kld, contrastive_loss = model.loss_function(data)
+            loss, recon, kld, contrastive_loss = model.loss_function(data, k=contrastive_loss_k)
             train_loss_all_recon += recon.item()
             train_loss_all_kld += kld.item()
             train_loss_all_contrastive += contrastive_loss.item()
