@@ -82,7 +82,7 @@ class VariationalAutoEncoder(nn.Module):
         loss = recon + self.beta * kld
 
         # contrastive loss
-        if k is not None:
+        if k > 0:
             temperature = 0.07
             # Find the nearest neighbors
             n = data.stats.shape[0]
