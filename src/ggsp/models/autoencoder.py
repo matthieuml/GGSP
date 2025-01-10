@@ -86,7 +86,7 @@ class VariationalAutoEncoder(nn.Module):
             temperature = 0.07
             # Find the nearest neighbors
             n = data.stats.shape[0]
-            distance = ((data.stats[None, :] - data.stats[:, None])**2).sum(axis=-1)
+            distance = ((data.stats[None, :] - data.stats[:, None])**2).sum(axis=-1) + 1e9 * torch.eye(n)
             _, neighbors_indices = torch.topk(distance, k, largest=False)
 
             # Create the mask
