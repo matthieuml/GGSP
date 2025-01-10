@@ -81,7 +81,7 @@ class VariationalAutoEncoder(nn.Module):
 
         loss = recon + self.beta * kld
 
-        # contrastive loss
+        # Contrastive loss
         if k >= 0:
             temperature = 0.07
             # Find the nearest neighbors
@@ -94,6 +94,9 @@ class VariationalAutoEncoder(nn.Module):
             row_indices = torch.arange(n).unsqueeze(1).expand_as(neighbors_indices)
             mask[row_indices, neighbors_indices] = True
             mask.fill_diagonal_(False)
+
+            # Send the mask to the same device as x_g
+            mask = mask.to(x_g.device)
 
             # Compute the cosine similarity
             x_g_normalized = F.normalize(x_g, dim=1)
