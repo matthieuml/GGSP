@@ -69,7 +69,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Augment graph dataset by permuting node indices.")
     parser.add_argument("--dataset_folder", type=str, required=True, help="Path to the dataset folder")
     parser.add_argument("--dataset", type=str, required=True, help="Name of the dataset to augment")
+    parser.add_argument("--factor", type=str, required=True, help="Multiplication factor of the dataset (int)")
     
     args = parser.parse_args()
 
-    generate_augmentation_dataset(args.dataset_folder, args.dataset)
+    generate_augmentation_dataset(args.dataset_folder, args.dataset, args.factor)
