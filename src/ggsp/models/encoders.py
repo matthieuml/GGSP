@@ -52,7 +52,7 @@ class GIN(torch.nn.Module):
         out = global_add_pool(x, data.batch)
         out = self.bn(out)
         out = self.fc(out)
-        return out
+        return None, out
 
 class GAT(nn.Module):
     def __init__(self, input_dim, hidden_dim, latent_dim, n_layers, dropout=0.2):
@@ -100,7 +100,8 @@ class GCN(nn.Module):
             nn.ReLU(inplace=True),
             nn.Linear(project_dim, project_dim))
         
-        self.fc = nn.Linear(hidden_dim, latent_dim)
+        self.bn = nn.BatchNorm1d(n_layers * hidden_dim)
+        self.fc = nn.Linear(n_layers * hidden_dim, latent_dim)
 
     def forward(self, data):
         z = data.x
@@ -112,4 +113,6 @@ class GCN(nn.Module):
             zs.append(z)
         gs = [global_add_pool(z, data.batch) for z in zs]
         z, g = [torch.cat(x, dim=1) for x in [zs, gs]]
+        g = self.bn(g)
+        g = self.fc(g)
         return z, g
