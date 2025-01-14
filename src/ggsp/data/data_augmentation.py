@@ -3,6 +3,7 @@ import shutil
 import networkx as nx
 import random
 import argparse
+import numpy as np
 
 from tqdm import tqdm
 
@@ -39,7 +40,9 @@ def generate_augmentation_dataset(dataset_folder, dataset, multiplier_factor: in
 
         # Generate a random permutation of the node indices
         for _ in range(multiplier_factor):
-            mapping = {node: new_node for new_node, node in enumerate(random.sample(G.nodes(), len(G.nodes())))}
+            nodes = list(G.nodes())
+            permuted_indices = np.random.permutation(len(nodes))
+            mapping = dict(zip(nodes, permuted_indices))
             G_aug = nx.relabel_nodes(G, mapping)
 
             # Save the augmented graph
