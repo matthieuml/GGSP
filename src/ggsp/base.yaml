@@ -5,7 +5,7 @@ user: Anonymous # User used for submission to Google Drive (default: Anonymous)
 # =========== Dataset parameters ===========
 
 dataset_folder: ./data
-training_dataset: train_augmented
+training_dataset: train
 valid_dataset: valid
 test_dataset: test
 dataset_preprocessing_function: base_preprocess_dataset # Function to preprocess the dataset (default: base_preprocess_dataset)
@@ -34,7 +34,7 @@ epochs_autoencoder: 1000 # Number of training epochs for the autoencoder (defaul
 batch_size_autoencoder: 32 # Batch size for training, controlling the number of samples per gradient update (default: 128)
 vae_lr: 0.001 # Learning rate for the VAE optimizer, typically a small float value (default: 0.001)
 vae_scheduler_step_size: 500 # Period of learning rate decay for the VAE optimizer (default: 500)
-contrastive_loss_k: 3 # Coefficient for the contrastive loss in the VAE loss function (default: 0)
+contrastive_loss_k: 2 # Coefficient for the contrastive loss in the VAE loss function (default: 0)
 vae_temperature_contrastive: 0.07 # Temperature parameter for the contrastive loss in the VAE loss function (default: 0.07)
 vae_contrastive_weight: 1.0e-03 # Weight of the contrastive loss in the VAE loss function (default: 1e-03)
 vae_scheduler_gamma: 0.1 # Multiplicative factor of learning rate decay for the VAE optimizer (default: 0.1)
@@ -47,7 +47,7 @@ vae_save_checkpoint: True # Whether to save the VAE model checkpoint (default: T
 timesteps: 500 # Number of timesteps for the diffusion (default: 500)
 hidden_dim_denoise: 512 # Hidden dimension size for denoising model layers (default: 512)
 n_layers_denoise: 3 # Number of layers in the denoising model (default: 3)
-n_condition: 7 # Number of distinct condition properties used in conditional vector (default: 7)
+n_condition: 8 # Number of distinct condition properties used in conditional vector (default: 7)
 dim_condition: 128 # Dimensionality of conditioning vectors for conditional generation (default: 128)
 
 # Diffusion training parameters
