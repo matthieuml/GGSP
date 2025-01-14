@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from ggsp.metrics import graph_norm_from_adj
 from ggsp.models.decoders import *
 from ggsp.models.encoders import *
 
@@ -69,7 +70,7 @@ class VariationalAutoEncoder(nn.Module):
         self.beta *= (1 + 0.075)
         print(f"New beta: {self.beta}") 
 
-    def loss_function(self, data, k=2):
+    def loss_function(self, data, k=2, compute_mae = False):
         x_g = self.encoder(data)
         mu = self.fc_mu(x_g)
         logvar = self.fc_logvar(x_g)
@@ -115,4 +116,10 @@ class VariationalAutoEncoder(nn.Module):
         else:
             contrastive_loss = torch.Tensor([0])
 
-        return loss, recon, kld, contrastive_loss
+        if compute_mae:
+            mae = graph_norm_from_adj(adj.detach().cpu().numpy(), data.A.detach().cpu().numpy(), norm_type='L1')
+            # TODO : to remove the hard coded value to fit kaggle scores
+            mae = mae.mean() / 256
+            return loss, recon, kld, contrastive_loss, mae
+
+        return loss, recon, kld, contrastive_loss, None
