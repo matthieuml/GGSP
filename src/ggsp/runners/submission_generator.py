@@ -11,7 +11,6 @@ from torch.utils.data import DataLoader
 
 # Add the parent directory to sys.path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'drive'))
-from gdrive import upload_file  # noqa: E402
 
 from ggsp.models import sample  # noqa: E402
 from ggsp.utils import construct_nx_from_adj, compute_graph_features  # noqa: E402
@@ -103,6 +102,7 @@ def generate_submission(
     )
     # Upload the file to the GGSP Drive
     if args.upload_submission_file:
+        from gdrive import upload_file  # noqa: E402
         if "user" not in args:
             args.user = "Anonymous"
         suffix_filename = "_" + args.user
