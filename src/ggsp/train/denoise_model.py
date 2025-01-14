@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 from torch.optim.optimizer import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler
 
-from ggsp.metrics import p_losses
+from ggsp.models import p_losses
 
 logger = logging.getLogger("GGSP")
 
