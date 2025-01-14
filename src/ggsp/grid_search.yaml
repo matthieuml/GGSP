@@ -70,6 +70,6 @@ graph_metric: MAE # Metric used to compute the distance between graphs can be No
 
 
 # =========== Logging ===========
-verbose: False # Whether to print additional information during training and evaluation (default: True)
-save_logs: True # Whether to save logs during training and evaluation (default: True)
-log_level: ERROR # Logging level for the application (default: INFO)
+verbose: True # Whether to print additional information during training and evaluation (default: True)
+save_logs: False # Whether to save logs during training and evaluation (default: True)
+log_level: INFO # Logging level for the application (default: INFO)

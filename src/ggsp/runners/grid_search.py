@@ -34,9 +34,6 @@ def run_grid_search(args: argparse.Namespace, device: Union[str, torch.device]) 
     validset = globals()[args.dataset_preprocessing_function](
         args.dataset_folder, args.valid_dataset, args.n_max_nodes, args.spectral_emb_dim
     )
-    testset = globals()[args.dataset_preprocessing_function](
-        args.dataset_folder, args.test_dataset, args.n_max_nodes, args.spectral_emb_dim
-    )
 
     # initialize VGAE dataloader
     train_loader_autoencoder = DataLoader(
@@ -53,9 +50,7 @@ def run_grid_search(args: argparse.Namespace, device: Union[str, torch.device]) 
     val_loader_denoise = DataLoader(
         validset, batch_size=args.batch_size_denoise, shuffle=args.shuffle_val
     )
-    test_loader = DataLoader(
-        testset, batch_size=max(args.batch_size_autoencoder, args.batch_size_denoise), shuffle=args.shuffle_test
-    )
+
     
 
     logger.info(f"Train set size: {len(trainset)}")
@@ -63,10 +58,10 @@ def run_grid_search(args: argparse.Namespace, device: Union[str, torch.device]) 
 
     def objective_ggsp(trial):
         # Sample hyperparameters from the trial
-        # args.hidden_dim_encoder = 144
+        args.hidden_dim_encoder = trial.suggest_int("n_layers_encoder", 4, 200)
         # args.hidden_dim_decoder = 353
         # args.latent_dim = 41
-        args.n_layers_encoder = trial.suggest_int("n_layers_encoder", 2, 10)
+        # args.n_layers_encoder = trial.suggest_int("n_layers_encoder", 2, 10)
         # args.n_layers_decoder = trial.suggest_int("n_layers_decoder", 2, 10)
         # args.contrastive_loss_k = trial.suggest_int("contrastive_loss_k", 0, 5)
         # args.epochs_autoencoder = 50
