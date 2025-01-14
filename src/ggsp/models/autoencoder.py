@@ -37,7 +37,7 @@ class VariationalAutoEncoder(nn.Module):
         self.gamma = contrastive_weight
 
     def forward(self, data):
-        x_g = self.encoder(data)
+        _, x_g = self.encoder(data)
         mu = self.fc_mu(x_g)
         logvar = self.fc_logvar(x_g)
         x_g = self.reparameterize(mu, logvar)
@@ -45,7 +45,7 @@ class VariationalAutoEncoder(nn.Module):
         return adj
 
     def encode(self, data):
-        x_g = self.encoder(data)
+        _, x_g = self.encoder(data)
         mu = self.fc_mu(x_g)
         logvar = self.fc_logvar(x_g)
         x_g = self.reparameterize(mu, logvar)
@@ -104,7 +104,8 @@ class VariationalAutoEncoder(nn.Module):
         
 
     def loss_function(self, data, k, temperature):
-        x_g = self.encoder(data)
+        _, x_g = self.encoder(data)
+        # import pdb; pdb.set_trace()
         mu = self.fc_mu(x_g)
         logvar = self.fc_logvar(x_g)
         x_g = self.reparameterize(mu, logvar)
@@ -113,7 +114,7 @@ class VariationalAutoEncoder(nn.Module):
         recon = F.l1_loss(adj, data.A, reduction="mean")
         kld = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
         contrastive_loss = self.constrastive_loss(x_g, data, k, temperature)
-            
-        loss = recon + self.beta * kld + self.gamma * contrastive_loss
+
+        loss = recon + self.beta * kld
 
         return loss, recon, kld, contrastive_loss
