@@ -69,6 +69,7 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
         args.encoder_classname,
         args.decoder_classname,
         args.vae_kld_weight,
+        args.vae_contrastive_weight,
     ).to(device)
 
     vae_optimizer = torch.optim.Adam(autoencoder.parameters(), lr=args.vae_lr)
@@ -95,6 +96,7 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
             kld_weight=args.vae_kld_weight,
             is_kld_weight_adaptative=args.is_kld_weight_adaptative,
             contrastive_loss_k=args.contrastive_loss_k,
+            vae_temperature_contrastive=args.vae_temperature_contrastive,
         )
         vae_metrics.to_csv(args.vae_metrics_path, index=False)
 

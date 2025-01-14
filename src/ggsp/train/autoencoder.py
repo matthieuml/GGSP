@@ -23,6 +23,7 @@ def train_autoencoder(
     device: Union[str, torch.device] = "cpu",
     is_kld_weight_adaptative: bool = False,
     contrastive_loss_k: int = None,
+    vae_temperature_contrastive: float=0.07,
 ) -> pd.DataFrame:
     """Train autoencoder model.
 
@@ -72,7 +73,7 @@ def train_autoencoder(
         for data in train_dataloader:
             data = data.to(device)
             optimizer.zero_grad()
-            loss, recon, kld, contrastive_loss = model.loss_function(data, k=contrastive_loss_k)
+            loss, recon, kld, contrastive_loss = model.loss_function(data, contrastive_loss_k, vae_temperature_contrastive)
             train_loss_all_recon += recon.item()
             train_loss_all_kld += kld.item()
             train_loss_all_contrastive += contrastive_loss.item()
@@ -93,7 +94,7 @@ def train_autoencoder(
 
         for data in val_dataloader:
             data = data.to(device)
-            loss, recon, kld, contrastive_loss = model.loss_function(data, k=contrastive_loss_k)
+            loss, recon, kld, contrastive_loss = model.loss_function(data, contrastive_loss_k, vae_temperature_contrastive)
             val_loss_all_recon += recon.item()
             val_loss_all_kld += kld.item()
             val_loss_all_contrastive += contrastive_loss.item()
