@@ -1,1 +1,1 @@
-conda install -qy scipy pandas tqdm pyyaml python-dotenv && pip install -q torch_geometric google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client pyyaml optuna zipfile
+conda install -qy scipy pandas tqdm pyyaml python-dotenv && pip install -q torch_geometric google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client pyyaml optuna
