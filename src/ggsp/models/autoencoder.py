@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from ggsp.metrics import graph_norm_from_adj
 from ggsp.models.decoders import *
 from ggsp.models.encoders import *
 
@@ -19,6 +20,7 @@ class VariationalAutoEncoder(nn.Module):
         encoder_class_name="GIN",
         decoder_class_name="Decoder",
         kld_weight=0.05,
+        contrastive_weight=0.05,
     ):
         super(VariationalAutoEncoder, self).__init__()
         self.n_max_nodes = n_max_nodes
@@ -32,6 +34,7 @@ class VariationalAutoEncoder(nn.Module):
             latent_dim, hidden_dim_dec, n_layers_dec, n_max_nodes
         )
         self.beta = kld_weight
+        self.gamma = contrastive_weight
 
     def forward(self, data):
         x_g = self.encoder(data)
@@ -69,7 +72,38 @@ class VariationalAutoEncoder(nn.Module):
         self.beta *= (1 + 0.075)
         print(f"New beta: {self.beta}") 
 
-    def loss_function(self, data, k=2):
+    def constrastive_loss(self, x_g, data, k=0, temperature=0.07): 
+        # Find the nearest neighbors
+        n = data.stats.shape[0]
+        identity = torch.eye(n, device=data.stats.device)
+        distance = ((data.stats[None, :] - data.stats[:, None])**2).sum(axis=-1) + 1e9 * identity
+        _, neighbors_indices = torch.topk(distance, k, largest=False)
+
+        # Create the mask
+        mask = torch.zeros((n, n), dtype=torch.bool, device=data.stats.device)
+        row_indices = torch.arange(n).unsqueeze(1).expand_as(neighbors_indices)
+        mask[row_indices, neighbors_indices] = True
+        mask.fill_diagonal_(False)
+
+        # Send the mask to the same device as x_g
+        mask = mask.to(x_g.device)
+
+        # Compute the cosine similarity
+        x_g_normalized = F.normalize(x_g, dim=1)
+        cosine_similarity = x_g_normalized @ x_g_normalized.T
+
+        # Compute the logits
+        logits = torch.exp(cosine_similarity / temperature)
+        numerator = logits 
+        denominator = (logits * (1-identity)).sum(dim=-1, keepdim=True)
+
+        # Compute the contrastive loss
+        contrastive_loss = -(mask * torch.log(numerator / denominator)).mean()
+
+        return contrastive_loss
+        
+
+    def loss_function(self, data, k, temperature, compute_mae=False):
         x_g = self.encoder(data)
         mu = self.fc_mu(x_g)
         logvar = self.fc_logvar(x_g)
@@ -78,41 +112,14 @@ class VariationalAutoEncoder(nn.Module):
 
         recon = F.l1_loss(adj, data.A, reduction="mean")
         kld = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+        contrastive_loss = self.constrastive_loss(x_g, data, k, temperature)
+            
+        loss = recon + self.beta * kld + self.gamma * contrastive_loss
 
-        loss = recon + self.beta * kld
+        if compute_mae:
+            mae = graph_norm_from_adj(adj.detach().cpu().numpy(), data.A.detach().cpu().numpy(), norm_type='MAE')
+            # TODO : to remove the hard coded value to fit kaggle scores
+            mae = mae.mean() / 256
+            return loss, recon, kld, contrastive_loss, mae
 
-        # Contrastive loss
-        if k > 0:
-            temperature = 0.07
-            # Find the nearest neighbors
-            n = data.stats.shape[0]
-            identity = torch.eye(n, device=x_g.device)
-            distance = ((data.stats[None, :] - data.stats[:, None])**2).sum(axis=-1) + 1e9 * identity
-            _, neighbors_indices = torch.topk(distance, k, largest=False)
-
-            # Create the mask
-            mask = torch.zeros((n, n), dtype=torch.bool, device=data.stats.device)
-            row_indices = torch.arange(n).unsqueeze(1).expand_as(neighbors_indices)
-            mask[row_indices, neighbors_indices] = True
-            mask.fill_diagonal_(False)
-
-            # Send the mask to the same device as x_g
-            mask = mask.to(x_g.device)
-
-            # Compute the cosine similarity
-            x_g_normalized = F.normalize(x_g, dim=1)
-            cosine_similarity = x_g_normalized @ x_g_normalized.T
-
-            # Compute the logits
-            logits = torch.exp(cosine_similarity / temperature)
-            numerator = logits 
-            denominator = (logits * (1-identity)).sum(dim=-1, keepdim=True)
-
-            # Compute the contrastive loss
-            contrastive_loss = -(mask * torch.log(numerator / denominator)).mean()
-            loss += 1.0e-03 * contrastive_loss
-        
-        else:
-            contrastive_loss = torch.Tensor([0])
-
-        return loss, recon, kld, contrastive_loss
+        return loss, recon, kld, contrastive_loss, None

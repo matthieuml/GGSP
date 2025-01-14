@@ -22,9 +22,9 @@ seed: 42 # Seed for random number generators, fixing the randomness in the appli
 # VAE model parameters
 encoder_classname: GIN # Encoder class name for the VAE model (default: GIN)
 decoder_classname: Decoder # Decoder class name for the VAE model (default: Decoder)
-hidden_dim_encoder: 62 # Hidden dimension size for encoder layers (default: 64)
-hidden_dim_decoder: 599 # Hidden dimension size for decoder layers (default: 256)
-latent_dim: 19 # Dimensionality of the latent space in the autoencoder (default: 32)
+hidden_dim_encoder: 144 # Hidden dimension size for encoder layers (default: 64)
+hidden_dim_decoder: 353 # Hidden dimension size for decoder layers (default: 256)
+latent_dim: 41 # Dimensionality of the latent space in the autoencoder (default: 32)
 n_layers_encoder: 4 # Number of layers in the encoder network (default: 2)
 n_layers_decoder: 5 # Number of layers in the decoder network (default: 3)
 
@@ -34,7 +34,9 @@ epochs_autoencoder: 1000 # Number of training epochs for the autoencoder (defaul
 batch_size_autoencoder: 32 # Batch size for training, controlling the number of samples per gradient update (default: 128)
 vae_lr: 0.001 # Learning rate for the VAE optimizer, typically a small float value (default: 0.001)
 vae_scheduler_step_size: 500 # Period of learning rate decay for the VAE optimizer (default: 500)
-contrastive_loss_k: 0 # Coefficient for the contrastive loss in the VAE loss function (default: 0)
+contrastive_loss_k: 2 # Coefficient for the contrastive loss in the VAE loss function (default: 0)
+vae_temperature_contrastive: 0.07 # Temperature parameter for the contrastive loss in the VAE loss function (default: 0.07)
+vae_contrastive_weight: 1.0e-03 # Weight of the contrastive loss in the VAE loss function (default: 1e-03)
 vae_scheduler_gamma: 0.1 # Multiplicative factor of learning rate decay for the VAE optimizer (default: 0.1)
 vae_kld_weight: 3.5e-8 # Weight of the KLD loss in the VAE loss function (default: 0.05)
 is_kld_weight_adaptative: False # Whether to adapt the KLD weight during training (default: False)
@@ -45,7 +47,7 @@ vae_save_checkpoint: True # Whether to save the VAE model checkpoint (default: T
 timesteps: 500 # Number of timesteps for the diffusion (default: 500)
 hidden_dim_denoise: 512 # Hidden dimension size for denoising model layers (default: 512)
 n_layers_denoise: 3 # Number of layers in the denoising model (default: 3)
-n_condition: 7 # Number of distinct condition properties used in conditional vector (default: 7)
+n_condition: 8 # Number of distinct condition properties used in conditional vector (default: 7)
 dim_condition: 128 # Dimensionality of conditioning vectors for conditional generation (default: 128)
 
 # Diffusion training parameters

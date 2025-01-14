@@ -80,7 +80,7 @@ def generate_submission(
                 Gs_generated = construct_nx_from_adj(
                     adj[i, :, :].detach().cpu().numpy()
                 )
-                stat_x = stat_x.detach().cpu().numpy()
+                stat_x = stat_x.detach().cpu().numpy()[:-1]
                 stat_predicted = compute_graph_features(Gs_generated).detach().cpu().numpy()
                 graph_losses.append(
                     np.mean(np.abs(stat_x - stat_predicted))
