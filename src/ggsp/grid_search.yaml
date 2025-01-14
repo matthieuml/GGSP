@@ -5,6 +5,9 @@ user: Anonymous # User used for submission to Google Drive (default: Anonymous)
 # =========== Dataset parameters ===========
 
 dataset_folder: ./data
+training_dataset: train
+valid_dataset: valid
+test_dataset: test
 dataset_preprocessing_function: base_preprocess_dataset # Function to preprocess the dataset (default: base_preprocess_dataset)
 n_max_nodes: 50 # Possible maximum number of nodes in graphs (default: 50)
 spectral_emb_dim: 10 # Dimensionality of spectral embeddings for representing graph structures (default: 10)

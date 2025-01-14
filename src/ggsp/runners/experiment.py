@@ -26,13 +26,13 @@ def run_experiment(args: argparse.Namespace, device: Union[str, torch.device]) -
 
     # Load the dataset
     trainset = globals()[args.dataset_preprocessing_function](
-        args.dataset_folder, "train", args.n_max_nodes, args.spectral_emb_dim
+        args.dataset_folder, args.training_dataset, args.n_max_nodes, args.spectral_emb_dim
     )
     validset = globals()[args.dataset_preprocessing_function](
-        args.dataset_folder, "valid", args.n_max_nodes, args.spectral_emb_dim
+        args.dataset_folder, args.valid_dataset, args.n_max_nodes, args.spectral_emb_dim
     )
     testset = globals()[args.dataset_preprocessing_function](
-        args.dataset_folder, "test", args.n_max_nodes, args.spectral_emb_dim
+        args.dataset_folder, args.test_dataset, args.n_max_nodes, args.spectral_emb_dim
     )
 
     train_loader_autoencoder = DataLoader(
