@@ -34,6 +34,9 @@ def run_grid_search(args: argparse.Namespace, device: Union[str, torch.device]) 
     validset = globals()[args.dataset_preprocessing_function](
         args.dataset_folder, args.valid_dataset, args.n_max_nodes, args.spectral_emb_dim
     )
+    testset = globals()[args.dataset_preprocessing_function](
+        args.dataset_folder, args.test_dataset, args.n_max_nodes, args.spectral_emb_dim
+    )
 
     # initialize VGAE dataloader
     train_loader_autoencoder = DataLoader(
@@ -50,6 +53,10 @@ def run_grid_search(args: argparse.Namespace, device: Union[str, torch.device]) 
     val_loader_denoise = DataLoader(
         validset, batch_size=args.batch_size_denoise, shuffle=args.shuffle_val
     )
+    test_loader = DataLoader(
+        testset, batch_size=max(args.batch_size_autoencoder, args.batch_size_denoise), shuffle=args.shuffle_test
+    )
+    
 
     logger.info(f"Train set size: {len(trainset)}")
     logger.info(f"Validation set size: {len(validset)}")
@@ -59,7 +66,7 @@ def run_grid_search(args: argparse.Namespace, device: Union[str, torch.device]) 
         # args.hidden_dim_encoder = 144
         # args.hidden_dim_decoder = 353
         # args.latent_dim = 41
-        # args.n_layers_encoder = trial.suggest_int("n_layers_encoder", 2, 10)
+        args.n_layers_encoder = trial.suggest_int("n_layers_encoder", 2, 10)
         # args.n_layers_decoder = trial.suggest_int("n_layers_decoder", 2, 10)
         # args.contrastive_loss_k = trial.suggest_int("contrastive_loss_k", 0, 5)
         # args.epochs_autoencoder = 50
@@ -68,16 +75,17 @@ def run_grid_search(args: argparse.Namespace, device: Union[str, torch.device]) 
 
         # initialize VGAE model
         autoencoder = VariationalAutoEncoder(
-            args.spectral_emb_dim,
-            args.hidden_dim_encoder,
-            args.hidden_dim_decoder,
-            args.latent_dim,
-            args.n_layers_encoder,
-            args.n_layers_decoder,
-            args.n_max_nodes,
-            args.encoder_classname,
-            args.decoder_classname,
-            args.vae_kld_weight,
+        args.spectral_emb_dim + 1,
+        args.hidden_dim_encoder,
+        args.hidden_dim_decoder,
+        args.latent_dim,
+        args.n_layers_encoder,
+        args.n_layers_decoder,
+        args.n_max_nodes,
+        args.encoder_classname,
+        args.decoder_classname,
+        args.vae_kld_weight,
+        args.vae_contrastive_weight,
         ).to(device)
 
         vae_optimizer = torch.optim.Adam(autoencoder.parameters(), lr=args.vae_lr)
@@ -104,6 +112,7 @@ def run_grid_search(args: argparse.Namespace, device: Union[str, torch.device]) 
                 kld_weight=args.vae_kld_weight,
                 is_kld_weight_adaptative=args.is_kld_weight_adaptative,
                 contrastive_loss_k=args.contrastive_loss_k,
+                vae_temperature_contrastive=args.vae_temperature_contrastive,
             )
             vae_metrics.to_csv(args.vae_metrics_path, index=False)
 
@@ -111,6 +120,16 @@ def run_grid_search(args: argparse.Namespace, device: Union[str, torch.device]) 
 
         logger.debug(f"Switching {autoencoder.__class__.__name__} model to eval mode")
         autoencoder.eval()
+
+        graph_losses = torch.tensor([])
+        for data in val_loader_autoencoder:
+            data = data.to(device)
+            adj = autoencoder(data)
+            graph_losses = torch.cat(
+                (graph_losses, graph_norm_from_adj(adj.detach().cpu().numpy(), data.A.detach().cpu().numpy(), norm_type=args.graph_metric))
+            )
+        
+        return (graph_losses.mean().item() + graph_losses.std().item()/2) / 256
 
         # define beta schedule
         logger.debug(f"Using {args.noising_schedule_function} function as noising schedule")
@@ -146,7 +165,7 @@ def run_grid_search(args: argparse.Namespace, device: Union[str, torch.device]) 
                 val_dataloader=val_loader_denoise,
                 optimizer=denoise_optimizer,
                 scheduler=denoise_scheduler,
-                epoch_number=args.epochs_denoiser,
+                epoch_number=args.epochs_denoise,
                 diffusion_timesteps=args.timesteps,
                 beta_schedule=betas,
                 loss_type=args.denoise_loss_type,
@@ -165,17 +184,11 @@ def run_grid_search(args: argparse.Namespace, device: Union[str, torch.device]) 
                 (graph_losses, graph_norm_from_adj(adj.detach().cpu().numpy(), data.A.detach().cpu().numpy(), norm_type=args.graph_metric))
             )
 
-        # TODO : Remove the division by batch size, just to fit to kaggle results
-        logger.info(
-            f"Validation {args.graph_metric} on graph features using {autoencoder.__class__.__name__} - "
-            f"Mean: {graph_losses.mean().item() / 256}, Std: {graph_losses.std().item() / 256}"
-        )
-
         del autoencoder, denoise_model
 
         return (graph_losses.mean().item() + graph_losses.std().item()/2) / 256
 
-    study = optuna.create_study(direction='minimize')
+    study = optuna.create_study(direction='maximize')
     study.optimize(objective_ggsp, n_trials=500)
 
     # Get best hyperparameters
