@@ -75,7 +75,8 @@ class VariationalAutoEncoder(nn.Module):
     def constrastive_loss(self, x_g, data, k=0, temperature=0.07): 
         # Find the nearest neighbors
         n = data.stats.shape[0]
-        distance = ((data.stats[None, :] - data.stats[:, None])**2).sum(axis=-1) + 1e9 * torch.eye(n)
+        identity = torch.eye(n, device=data.stats.device)
+        distance = ((data.stats[None, :] - data.stats[:, None])**2).sum(axis=-1) + 1e9 * identity
         _, neighbors_indices = torch.topk(distance, k, largest=False)
 
         # Create the mask
@@ -92,7 +93,6 @@ class VariationalAutoEncoder(nn.Module):
         cosine_similarity = x_g_normalized @ x_g_normalized.T
 
         # Compute the logits
-        identity = torch.eye(n, device=data.stats.device)
         logits = torch.exp(cosine_similarity / temperature)
         numerator = logits 
         denominator = (logits * (1-identity)).sum(dim=-1, keepdim=True)
