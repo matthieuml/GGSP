@@ -5,14 +5,14 @@ user: MML # User used for submission to Google Drive (default: Anonymous)
 # =========== Dataset parameters ===========
 
 dataset_folder: ./data
-training_dataset: train
+training_dataset: train_augmented
 valid_dataset: valid
 test_dataset: test
 dataset_preprocessing_function: base_preprocess_dataset # Function to preprocess the dataset (default: base_preprocess_dataset)
 n_max_nodes: 50 # Possible maximum number of nodes in graphs (default: 50)
 spectral_emb_dim: 10 # Dimensionality of spectral embeddings for representing graph structures (default: 10)
 batch_size_autoencoder: 32 # Batch size for training, controlling the number of samples per gradient update (default: 256)
-batch_size_denoise: 32
+batch_size_denoise: 128
 shuffle_train: True 
 shuffle_val: False
 shuffle_test: False # Should be always False to fit submission format
@@ -24,9 +24,9 @@ seed: 42 # Seed for random number generators, fixing the randomness in the appli
 # VAE model parameters
 encoder_classname: GIN # Encoder class name for the VAE model (default: GGNN)
 decoder_classname: Decoder # Decoder class name for the VAE model (default: Decoder)
-hidden_dim_encoder: 62 # Hidden dimension size for encoder layers (default: 64)
-hidden_dim_decoder: 599 # Hidden dimension size for decoder layers (default: 256)
-latent_dim: 19 # Dimensionality of the latent space in the autoencoder (default: 32)
+hidden_dim_encoder: 64 # Hidden dimension size for encoder layers (default: 64)
+hidden_dim_decoder: 256 # Hidden dimension size for decoder layers (default: 256)
+latent_dim: 32 # Dimensionality of the latent space in the autoencoder (default: 32)
 n_layers_encoder: 4 # Number of layers in the encoder network (default: 2)
 n_layers_decoder: 5 # Number of layers in the decoder network (default: 3)
 
@@ -35,6 +35,9 @@ train_autoencoder: False # Whether to train the VAE model
 epochs_autoencoder: 1000 # Number of training epochs for the autoencoder (default: 200)
 vae_lr: 0.001 # Learning rate for the VAE optimizer, typically a small float value (default: 0.001)
 vae_scheduler_step_size: 500 # Period of learning rate decay for the VAE optimizer (default: 500)
+contrastive_loss_k: 2 # Coefficient for the contrastive loss in the VAE loss function (default: 0)
+vae_temperature_contrastive: 0.07 # Temperature parameter for the contrastive loss in the VAE loss function (default: 0.07)
+vae_contrastive_weight: 1.0e-03 # Weight of the contrastive loss in the VAE loss function (default: 1e-03)
 vae_scheduler_gamma: 0.1 # Multiplicative factor of learning rate decay for the VAE optimizer (default: 0.1)
 vae_kld_weight: 3.5e-8 # Weight of the KLD loss in the VAE loss function (default: 0.05)
 is_kld_weight_adaptative: False # Whether to adapt the KLD weight during training (default: False)

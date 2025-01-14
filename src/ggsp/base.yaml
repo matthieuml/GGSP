@@ -1,11 +1,11 @@
 exp_path: ./run
-exp_name: experiment
-user: Anonymous # User used for submission to Google Drive (default: Anonymous)
+exp_name: GIN_augmented
+user: MML # User used for submission to Google Drive (default: Anonymous)
 
 # =========== Dataset parameters ===========
 
 dataset_folder: ./data
-training_dataset: train
+training_dataset: train_augmented
 valid_dataset: valid
 test_dataset: test
 dataset_preprocessing_function: base_preprocess_dataset # Function to preprocess the dataset (default: base_preprocess_dataset)
@@ -24,14 +24,14 @@ encoder_classname: GIN # Encoder class name for the VAE model (default: GIN)
 decoder_classname: Decoder # Decoder class name for the VAE model (default: Decoder)
 hidden_dim_encoder: 144 # Hidden dimension size for encoder layers (default: 64)
 hidden_dim_decoder: 353 # Hidden dimension size for decoder layers (default: 256)
-latent_dim: 41 # Dimensionality of the latent space in the autoencoder (default: 32)
+latent_dim: 18 # Dimensionality of the latent space in the autoencoder (default: 32)
 n_layers_encoder: 4 # Number of layers in the encoder network (default: 2)
 n_layers_decoder: 5 # Number of layers in the decoder network (default: 3)
 
 # VAE training parameters
 train_autoencoder: True # Whether to train the VAE model
 epochs_autoencoder: 1000 # Number of training epochs for the autoencoder (default: 200)
-batch_size_autoencoder: 32 # Batch size for training, controlling the number of samples per gradient update (default: 128)
+batch_size_autoencoder: 128 # Batch size for training, controlling the number of samples per gradient update (default: 128)
 vae_lr: 0.001 # Learning rate for the VAE optimizer, typically a small float value (default: 0.001)
 vae_scheduler_step_size: 500 # Period of learning rate decay for the VAE optimizer (default: 500)
 contrastive_loss_k: 2 # Coefficient for the contrastive loss in the VAE loss function (default: 0)

@@ -22,16 +22,16 @@ seed: 42 # Seed for random number generators, fixing the randomness in the appli
 # VAE model parameters
 encoder_classname: GIN # Encoder class name for the VAE model (default: GIN)
 decoder_classname: Decoder # Decoder class name for the VAE model (default: Decoder)
-hidden_dim_encoder: 144 # Hidden dimension size for encoder layers (default: 64)
-hidden_dim_decoder: 353 # Hidden dimension size for decoder layers (default: 256)
-latent_dim: 41 # Dimensionality of the latent space in the autoencoder (default: 32)
+hidden_dim_encoder: 64 # Hidden dimension size for encoder layers (default: 64)
+hidden_dim_decoder: 256 # Hidden dimension size for decoder layers (default: 256)
+latent_dim: 16 # Dimensionality of the latent space in the autoencoder (default: 32)
 n_layers_encoder: 4 # Number of layers in the encoder network (default: 2)
 n_layers_decoder: 5 # Number of layers in the decoder network (default: 3)
 
 # VAE training parameters
 train_autoencoder: True # Whether to train the VAE model
-epochs_autoencoder: 50 # Number of training epochs for the autoencoder (default: 200)
-batch_size_autoencoder: 32 # Batch size for training, controlling the number of samples per gradient update (default: 128)
+epochs_autoencoder: 100 # Number of training epochs for the autoencoder (default: 200)
+batch_size_autoencoder: 256 # Batch size for training, controlling the number of samples per gradient update (default: 128)
 vae_lr: 0.001 # Learning rate for the VAE optimizer, typically a small float value (default: 0.001)
 vae_scheduler_step_size: 500 # Period of learning rate decay for the VAE optimizer (default: 500)
 contrastive_loss_k: 2 # Coefficient for the contrastive loss in the VAE loss function (default: 0)
@@ -70,6 +70,6 @@ graph_metric: MAE # Metric used to compute the distance between graphs can be No
 
 
 # =========== Logging ===========
-verbose: True # Whether to print additional information during training and evaluation (default: True)
+verbose: False # Whether to print additional information during training and evaluation (default: True)
 save_logs: False # Whether to save logs during training and evaluation (default: True)
-log_level: INFO # Logging level for the application (default: INFO)
+log_level: ERROR # Logging level for the application (default: INFO)

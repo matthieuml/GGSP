@@ -58,11 +58,11 @@ def run_grid_search(args: argparse.Namespace, device: Union[str, torch.device]) 
 
     def objective_ggsp(trial):
         # Sample hyperparameters from the trial
-        args.hidden_dim_encoder = trial.suggest_int("n_layers_encoder", 4, 200)
+        # args.hidden_dim_encoder = 144
         # args.hidden_dim_decoder = 353
-        # args.latent_dim = 41
-        # args.n_layers_encoder = trial.suggest_int("n_layers_encoder", 2, 10)
-        # args.n_layers_decoder = trial.suggest_int("n_layers_decoder", 2, 10)
+        # args.latent_dim = trial.suggest_int("latent_dim", 2, 64)
+        args.n_layers_encoder = trial.suggest_int("n_layers_encoder", 2, 10)
+        args.n_layers_decoder = trial.suggest_int("n_layers_decoder", 2, 10)
         # args.contrastive_loss_k = trial.suggest_int("contrastive_loss_k", 0, 5)
         # args.epochs_autoencoder = 50
         # args.epochs_denoiser = 30
@@ -183,7 +183,7 @@ def run_grid_search(args: argparse.Namespace, device: Union[str, torch.device]) 
 
         return (graph_losses.mean().item() + graph_losses.std().item()/2) / 256
 
-    study = optuna.create_study(direction='maximize')
+    study = optuna.create_study(direction='minimize')
     study.optimize(objective_ggsp, n_trials=500)
 
     # Get best hyperparameters
