@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from ggsp.metrics import graph_norm_from_adj
 from ggsp.models.decoders import *
 from ggsp.models.encoders import *
 

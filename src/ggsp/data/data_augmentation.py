@@ -49,7 +49,7 @@ def generate_augmentation_dataset(dataset_folder, dataset, multiplier_factor: in
             if extension == "graphml":
                 nx.write_graphml(G_aug, os.path.join(augmented_graph_path, f"graph_{new_graph_index}.graphml"))
             else:
-                nx.write_edgelist(G_aug, os.path.join(augmented_graph_path, f"graph_{new_graph_index}.graphml"), data=True)
+                nx.write_edgelist(G_aug, os.path.join(augmented_graph_path, f"graph_{new_graph_index}.edgelist"), data=True)
 
             shutil.copy(fstats, os.path.join(augmented_desc_path, f"graph_{new_graph_index}.txt"))
             
@@ -59,7 +59,7 @@ def generate_augmentation_dataset(dataset_folder, dataset, multiplier_factor: in
         if extension == "graphml":
             nx.write_graphml(G, os.path.join(augmented_graph_path, f"graph_{new_graph_index}.graphml"))
         else:
-            nx.write_edgelist(G, os.path.join(augmented_graph_path, f"graph_{new_graph_index}.graphml"), data=True)
+            nx.write_edgelist(G, os.path.join(augmented_graph_path, f"graph_{new_graph_index}.edgelist"), data=True)
 
         shutil.copy(fstats, os.path.join(augmented_desc_path, f"graph_{new_graph_index}.txt"))
       

@@ -55,10 +55,11 @@ def train_autoencoder(
             "val_reconstruction_loss",
             "val_kld_loss",
             "val_contrastive_loss",
+            "val_mae",
         ]
     )
 
-    best_val_loss = np.inf
+    best_val_mae = np.inf
     previous_lr = scheduler.get_last_lr()
     for epoch in range(1, epoch_number + 1):
         logger.debug(f"Epoch: {epoch}, switching model to train mode")
@@ -74,6 +75,7 @@ def train_autoencoder(
             data = data.to(device)
             optimizer.zero_grad()
             loss, recon, kld, contrastive_loss = model.loss_function(data, contrastive_loss_k, vae_temperature_contrastive)
+            loss, recon, kld, contrastive_loss, _ = model.loss_function(data, k=contrastive_loss_k)
             train_loss_all_recon += recon.item()
             train_loss_all_kld += kld.item()
             train_loss_all_contrastive += contrastive_loss.item()
@@ -91,6 +93,7 @@ def train_autoencoder(
         val_loss_all_recon = 0
         val_loss_all_kld = 0
         val_loss_all_contrastive = 0
+        val_mae_all = 0
 
         for data in val_dataloader:
             data = data.to(device)
@@ -101,6 +104,7 @@ def train_autoencoder(
             val_loss_all += loss.item()
             cnt_val += 1
             val_count += torch.max(data.batch) + 1
+            val_mae_all += mae.item()
 
         df_metrics = pd.concat(
             [
@@ -117,6 +121,7 @@ def train_autoencoder(
                         "val_reconstruction_loss": val_loss_all_recon / cnt_val,
                         "val_kld_loss": val_loss_all_kld / cnt_val,
                         "val_contrastive_loss": val_loss_all_contrastive / cnt_val,
+                        "val_mae": val_mae_all / cnt_val,
                     },
                     index=[0],
                 ),
@@ -125,7 +130,7 @@ def train_autoencoder(
         ).reset_index(drop=True)
 
         logger.info(
-            "Epoch: {:04d}/{:04d}, Train Loss: {:.5f}, Train Reconstruction Loss: {:.5f}, Train KLD Loss: {:.5f}, Train Contrastive Loss: {:.5f} Val Loss: {:.5f}, Val Reconstruction Loss: {:.5f}, Val KLD Loss: {:.5f}, Val Contrastive Loss: {:.5f}".format(
+            "Epoch: {:04d}/{:04d}, Train Loss: {:.5f}, Train Reconstruction Loss: {:.5f}, Train KLD Loss: {:.5f}, Train Contrastive Loss: {:.5f} Val Loss: {:.5f}, Val Reconstruction Loss: {:.5f}, Val KLD Loss: {:.5f}, Val Contrastive Loss: {:.5f}, Val MAE {:.5f}".format(
                 df_metrics.iloc[-1]["epoch"],
                 epoch_number,
                 df_metrics.iloc[-1]["train_loss"],
@@ -136,6 +141,7 @@ def train_autoencoder(
                 df_metrics.iloc[-1]["val_reconstruction_loss"],
                 df_metrics.iloc[-1]["val_kld_loss"],
                 df_metrics.iloc[-1]["val_contrastive_loss"],
+                df_metrics.iloc[-1]["val_mae"],
             )
         )
 
@@ -144,11 +150,11 @@ def train_autoencoder(
             previous_lr = scheduler.get_last_lr()
             logger.debug(f"Learning rate changed to {previous_lr}")
 
-        if best_val_loss >= val_loss_all and checkpoint_path is not None:
+        if best_val_mae >= val_mae_all and checkpoint_path is not None:
             logger.debug(
                 f"New best checkpoint found at epoch {epoch}, saving to {checkpoint_path}"
             )
-            best_val_loss = val_loss_all
+            best_val_mae = val_mae_all
             torch.save(
                 {
                     "state_dict": model.state_dict(),
