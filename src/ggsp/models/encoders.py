@@ -102,14 +102,14 @@ class GCN(nn.Module):
         
         self.fc = nn.Linear(hidden_dim, latent_dim)
 
-    def forward(self, x, edge_index, batch):
-        z = x
+    def forward(self, data):
+        z = data.x
         zs = []
         for conv, bn in zip(self.layers, self.batch_norms):
-            z = conv(z, edge_index)
+            z = conv(z, data.edge_index)
             z = F.relu(z)
             z = bn(z)
             zs.append(z)
-        gs = [global_add_pool(z, batch) for z in zs]
+        gs = [global_add_pool(z, data.batch) for z in zs]
         z, g = [torch.cat(x, dim=1) for x in [zs, gs]]
         return z, g
