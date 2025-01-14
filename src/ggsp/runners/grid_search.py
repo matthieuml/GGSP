@@ -56,33 +56,28 @@ def run_grid_search(args: argparse.Namespace, device: Union[str, torch.device]) 
 
     def objective_ggsp(trial):
         # Sample hyperparameters from the trial
-        spectral_emb_dim = 11
-        hidden_dim_encoder = trial.suggest_int("hidden_dim_encoder", 10, 64) #256
-        latent_dim = 19
-        hidden_dim_decoder = trial.suggest_int("hidden_dim_decoder", 500, 800) #512
-        n_layers_encoder = trial.suggest_int("n_layers_encoder", 5, 10) #2
-        n_layers_decoder = trial.suggest_int("n_layers_decoder", 5, 10) #3
-        n_max_nodes = 50
-        vae_kld_weight = 3.5e-07
-        encoder_classname = trial.suggest_categorical('encoder_classname', ['GIN'])
-        decoder_classname = trial.suggest_categorical('decoder_classname', ['Decoder'])
-        epochs_autoencoder = trial.suggest_int("epochs_autoencoder", 500, 1000) #200
-        epochs_denoiser = trial.suggest_int("epochs_denoiser", 500, 1000) #100
+        # args.hidden_dim_encoder = 144
+        # args.hidden_dim_decoder = 353
+        # args.latent_dim = 41
+        # args.n_layers_encoder = trial.suggest_int("n_layers_encoder", 2, 10)
+        # args.n_layers_decoder = trial.suggest_int("n_layers_decoder", 2, 10)
+        # args.contrastive_loss_k = trial.suggest_int("contrastive_loss_k", 0, 5)
+        # args.epochs_autoencoder = 50
+        # args.epochs_denoiser = 30
 
-        print(f"""Spec dim: {spectral_emb_dim}, hidden_dim_encoder: {hidden_dim_encoder}, hidden_dim_decoder: {hidden_dim_decoder}, latent_dim: {latent_dim}, n_layers_encoder: {n_layers_encoder}, n_layers_decoder: {n_layers_decoder}, n_max_nodes: {n_max_nodes}, vae_kld_weight: {vae_kld_weight}, encoder_classname: {encoder_classname}, decoder_classname: {decoder_classname}, epochs_autoencoder: {epochs_autoencoder}, epochs_denoiser: {epochs_denoiser}""")
 
         # initialize VGAE model
         autoencoder = VariationalAutoEncoder(
-            spectral_emb_dim,
-            hidden_dim_encoder,
-            hidden_dim_decoder,
-            latent_dim,
-            n_layers_encoder,
-            n_layers_decoder,
-            n_max_nodes,
-            encoder_classname,
-            decoder_classname,
-            vae_kld_weight,
+            args.spectral_emb_dim,
+            args.hidden_dim_encoder,
+            args.hidden_dim_decoder,
+            args.latent_dim,
+            args.n_layers_encoder,
+            args.n_layers_decoder,
+            args.n_max_nodes,
+            args.encoder_classname,
+            args.decoder_classname,
+            args.vae_kld_weight,
         ).to(device)
 
         vae_optimizer = torch.optim.Adam(autoencoder.parameters(), lr=args.vae_lr)
@@ -94,7 +89,7 @@ def run_grid_search(args: argparse.Namespace, device: Union[str, torch.device]) 
 
         # Train VGAE model
         if args.vae_load_checkpoint_path is not None:
-            load_model_checkpoint(autoencoder, vae_optimizer, args.vae_load_checkpoint_path)
+            load_model_checkpoint(autoencoder, vae_optimizer, args.vae_load_checkpoint_path, device)
 
         if args.train_autoencoder:
             vae_metrics = train_autoencoder(
@@ -103,11 +98,12 @@ def run_grid_search(args: argparse.Namespace, device: Union[str, torch.device]) 
                 val_dataloader=val_loader_autoencoder,
                 optimizer=vae_optimizer,
                 scheduler=vae_scheduler,
-                epoch_number=epochs_autoencoder,
+                epoch_number=args.epochs_autoencoder,
                 device=device,
                 checkpoint_path=args.vae_save_checkpoint_path,
-                kld_weight=vae_kld_weight,
+                kld_weight=args.vae_kld_weight,
                 is_kld_weight_adaptative=args.is_kld_weight_adaptative,
+                contrastive_loss_k=args.contrastive_loss_k,
             )
             vae_metrics.to_csv(args.vae_metrics_path, index=False)
 
@@ -122,7 +118,7 @@ def run_grid_search(args: argparse.Namespace, device: Union[str, torch.device]) 
 
         # initialize denoising model
         denoise_model = DenoiseNN(
-            input_dim=latent_dim,
+            input_dim=args.latent_dim,
             hidden_dim=args.hidden_dim_denoise,
             n_layers=args.n_layers_denoise,
             n_cond=args.n_condition,
@@ -150,7 +146,7 @@ def run_grid_search(args: argparse.Namespace, device: Union[str, torch.device]) 
                 val_dataloader=val_loader_denoise,
                 optimizer=denoise_optimizer,
                 scheduler=denoise_scheduler,
-                epoch_number=epochs_denoiser,
+                epoch_number=args.epochs_denoiser,
                 diffusion_timesteps=args.timesteps,
                 beta_schedule=betas,
                 loss_type=args.denoise_loss_type,
