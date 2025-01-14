@@ -74,8 +74,7 @@ def train_autoencoder(
         for data in train_dataloader:
             data = data.to(device)
             optimizer.zero_grad()
-            loss, recon, kld, contrastive_loss = model.loss_function(data, contrastive_loss_k, vae_temperature_contrastive)
-            loss, recon, kld, contrastive_loss, _ = model.loss_function(data, k=contrastive_loss_k)
+            loss, recon, kld, contrastive_loss, _ = model.loss_function(data, contrastive_loss_k, vae_temperature_contrastive)
             train_loss_all_recon += recon.item()
             train_loss_all_kld += kld.item()
             train_loss_all_contrastive += contrastive_loss.item()
@@ -97,7 +96,7 @@ def train_autoencoder(
 
         for data in val_dataloader:
             data = data.to(device)
-            loss, recon, kld, contrastive_loss = model.loss_function(data, contrastive_loss_k, vae_temperature_contrastive)
+            loss, recon, kld, contrastive_loss, mae = model.loss_function(data, contrastive_loss_k, vae_temperature_contrastive, compute_mae=True)
             val_loss_all_recon += recon.item()
             val_loss_all_kld += kld.item()
             val_loss_all_contrastive += contrastive_loss.item()
@@ -130,7 +129,7 @@ def train_autoencoder(
         ).reset_index(drop=True)
 
         logger.info(
-            "Epoch: {:04d}/{:04d}, Train Loss: {:.5f}, Train Reconstruction Loss: {:.5f}, Train KLD Loss: {:.5f}, Train Contrastive Loss: {:.5f} Val Loss: {:.5f}, Val Reconstruction Loss: {:.5f}, Val KLD Loss: {:.5f}, Val Contrastive Loss: {:.5f}, Val MAE {:.5f}".format(
+            "Epoch: {:04d}/{:04d}, TL: {:.5f}, TRL: {:.5f}, TKLDL: {:.5f}, TCL: {:.5f} VL: {:.5f}, VRL: {:.5f}, VKLDL: {:.5f}, VCL: {:.5f}, VMAE {:.5f}".format(
                 df_metrics.iloc[-1]["epoch"],
                 epoch_number,
                 df_metrics.iloc[-1]["train_loss"],

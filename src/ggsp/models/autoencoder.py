@@ -103,7 +103,7 @@ class VariationalAutoEncoder(nn.Module):
         return contrastive_loss
         
 
-    def loss_function(self, data, k, temperature):
+    def loss_function(self, data, k, temperature, compute_mae=False):
         x_g = self.encoder(data)
         mu = self.fc_mu(x_g)
         logvar = self.fc_logvar(x_g)
@@ -116,4 +116,10 @@ class VariationalAutoEncoder(nn.Module):
             
         loss = recon + self.beta * kld + self.gamma * contrastive_loss
 
-        return loss, recon, kld, contrastive_loss
+        if compute_mae:
+            mae = graph_norm_from_adj(adj.detach().cpu().numpy(), data.A.detach().cpu().numpy(), norm_type='MAE')
+            # TODO : to remove the hard coded value to fit kaggle scores
+            mae = mae.mean() / 256
+            return loss, recon, kld, contrastive_loss, mae
+
+        return loss, recon, kld, contrastive_loss, None
